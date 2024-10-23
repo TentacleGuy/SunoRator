@@ -10,8 +10,8 @@ pages = create_routes(app)
 
 
 @app.route('/')
-def home():
-    return render_template('content/generate.php', pages=pages)
+def start():
+    return render_template('content/home.php', pages=pages)
 
 if __name__ == '__main__':
     app.run(debug=True)

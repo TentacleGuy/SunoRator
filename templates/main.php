@@ -6,12 +6,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <!-- CSS -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/uikit.min.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/uikit.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/style.min.css') }}">
     
         <!--- JS -->
-        <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
-        <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='dist/js/uikit.min.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='dist/js/uikit-icons.min.js') }}" defer></script>
     </head>
     <body>
         {% include 'layout/navbar.php' %}
