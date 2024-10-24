@@ -14,7 +14,6 @@ def create_routes(app):
         if filename.endswith('.php'):
             # Split filename to get the order and the actual route name
             parts = filename.split('-')
-            menu_order = parts[0]  # The number for ordering
             route_name = parts[1].split('.')[0]  # The route name without the extension
             
             # Add the cleaned route name to the list of pages for the menu

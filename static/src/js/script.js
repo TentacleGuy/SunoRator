@@ -16,12 +16,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(url);
         });
     });
-});
-/*logging*/
-const socket = io();
 
-socket.on('log_update', function(msg) {
     const terminalOutput = document.getElementById('terminal-output');
-    terminalOutput.textContent = msg.data;
-    terminalOutput.scrollTop = terminalOutput.scrollHeight; // Auto-scroll to the bottom
+    const socket = io();
+    
+    socket.on('log_update', function(msg) {
+        terminalOutput.textContent = msg.data;
+        terminalOutput.scrollTop = terminalOutput.scrollHeight; // Auto-scroll to the bottom
+    });
+
 });
+

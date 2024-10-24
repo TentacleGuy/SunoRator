@@ -16,16 +16,35 @@
 
     </head>
     <body>
-        {% include 'layout/navbar.php' %}
-
-        <!-- Main Content -->
-        <div class="uk-container uk-margin" id="main-content">
-            {% block content %}{% endblock %}
+        <!-- Sticky Navbar -->
+        <div uk-sticky="sel-target: .uk-navbar; cls-active: uk-navbar-sticky">
+            {% include 'layout/navbar.php' %}
         </div>
 
-        {% include 'layout/footer.php' %}
-    </body>
+        <!-- Main Content -->
+        <div class="uk-section uk-section-default">
+            <div class="uk-container uk-margin" id="main-content">
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+        <!-- Collapsible Footer -->
 
+        <div class="uk-section uk-section-secondary uk-margin-remove uk-padding-small" id="debug-footer">	
+            <div class="uk-container">
+                <ul uk-accordion>
+                        <li>
+                            <a class="uk-accordion-title">Debug</a>
+                            <div class="uk-accordion-content" id="footer-content">
+                                {% include 'layout/footer.php' %}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </body>
 </html>
+
 
 <!-- TODO: Sidebar / Modal hinzufügen -->
