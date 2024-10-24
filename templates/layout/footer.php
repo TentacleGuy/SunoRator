@@ -1,6 +1,8 @@
 <footer class="uk-footer">
     <div class="uk-container">
-        <p>&copy; 2023 Suno KIt. Alle Rechte vorbehalten.</p>
+        <div id="terminal-output">
+        <!-- Terminal output will be inserted here -->
+        </div>
     </div>
 </footer>
 

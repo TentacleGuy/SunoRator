@@ -12,12 +12,14 @@
         <!--- JS -->
         <script src="{{ url_for('static', filename='dist/js/uikit.min.js') }}" defer></script>
         <script src="{{ url_for('static', filename='dist/js/uikit-icons.min.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='dist/js/socket.io.min.js') }}" defer></script>
+
     </head>
     <body>
         {% include 'layout/navbar.php' %}
 
         <!-- Main Content -->
-        <div class="uk-container uk-margin">
+        <div class="uk-container uk-margin" id="main-content">
             {% block content %}{% endblock %}
         </div>
 
