@@ -4,7 +4,9 @@
             <div class="uk-navbar-left">
                 <ul class="uk-navbar-nav">
                     {% for page in pages %}
-                    <li><a href="{{ url_for(page) }}" data-ajax="true">{{ page.capitalize() }}</a></li>
+                    <li class="{% if current_page == page.url %}uk-active{% endif %}">
+                        <a href="{{ url_for(page.url) }}">{{ page.name }}</a>
+                    </li>
                     {% endfor %}
                 </ul>
             </div>

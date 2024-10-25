@@ -24,27 +24,25 @@
         <!-- Main Content -->
         <div class="uk-section uk-section-default">
             <div class="uk-container uk-margin" id="main-content">
-                
-                {% block content %}{% endblock %}
+                {% block content %}
+                    <!-- Hier wird der dynamische Inhalt jeder Route eingefügt -->
+                    {{ content | safe }}
+                {% endblock %}
             </div>
         </div>
-        <!-- Collapsible Footer -->
 
-        <div class="uk-section uk-section-secondary uk-margin-remove uk-padding-small" id="debug-footer">	
+        <!-- Collapsible Footer -->
+        <div class="uk-section uk-section-secondary uk-margin-remove uk-padding-small" id="debug-footer">    
             <div class="uk-container">
                 <ul uk-accordion>
-                        <li>
-                            <a class="uk-accordion-title">Debug</a>
-                            <div class="uk-accordion-content" id="footer-content">
-                                {% include 'layout/footer.php' %}
-                            </div>
-                        </li>
-                    </ul>
-                </div>
+                    <li>
+                        <a class="uk-accordion-title">Debug</a>
+                        <div class="uk-accordion-content" id="footer-content">
+                            {% include 'layout/footer.php' %}
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
     </body>
 </html>
-
-
-<!-- TODO: Sidebar / Modal hinzufügen -->
