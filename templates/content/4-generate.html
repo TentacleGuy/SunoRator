@@ -1,0 +1,38 @@
+
+{% block content %}
+<div class="uk-container">
+    <div class="uk-card uk-card-default uk-card-body">
+        <!-- Model Selection -->
+        <div class="uk-margin">
+            <label class="uk-form-label">Model</label>
+            <select class="uk-select" id="generator-model"></select>
+        </div>
+
+        <!-- Input Fields -->
+        <div class="uk-margin">
+            <label class="uk-form-label">Song Title</label>
+            <input class="uk-input" type="text" id="song-title">
+        </div>
+
+        <div class="uk-margin">
+            <label class="uk-form-label">Style/Metatags</label>
+            <input class="uk-input" type="text" id="style-tags">
+        </div>
+
+        <div class="uk-margin">
+            <label class="uk-form-label">Prompt</label>
+            <textarea class="uk-textarea" rows="4" id="generation-prompt"></textarea>
+        </div>
+
+        <!-- Generate Button -->
+        <button class="uk-button uk-button-primary" id="generate-lyrics">Generate Lyrics</button>
+
+        <!-- Output -->
+        <div class="uk-margin">
+            <div class="uk-card uk-card-default uk-card-body uk-padding-small">
+                <pre id="generation-output" class="uk-height-medium uk-overflow-auto"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

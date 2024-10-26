@@ -1,0 +1,39 @@
+{% block content %}
+<div class="uk-container">
+    <div class="uk-card uk-card-default uk-card-body">
+        <!-- Model Settings -->
+        <div class="uk-margin">
+            <label class="uk-form-label">Model</label>
+            <select class="uk-select" id="model-select"></select>
+        </div>
+
+        <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
+            <div>
+                <label class="uk-form-label">Epochs</label>
+                <input class="uk-input" type="number" id="epochs" value="3">
+            </div>
+            <div>
+                <label class="uk-form-label">Learning Rate</label>
+                <input class="uk-input" type="number" id="learning-rate" value="0.0001">
+            </div>
+            <div>
+                <label class="uk-form-label">Batch Size</label>
+                <input class="uk-input" type="number" id="batch-size" value="8">
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="uk-margin">
+            <button class="uk-button uk-button-primary" id="start-training">Start Training</button>
+            <button class="uk-button uk-button-danger" id="stop-training">Stop Training</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="uk-margin">
+            <progress class="uk-progress" id="training-progress" value="0" max="100"></progress>
+            <div id="status-display" class="uk-text-meta"></div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

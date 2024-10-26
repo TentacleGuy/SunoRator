@@ -1,6 +1,5 @@
 import os
-from vars import *
-
+from config.vars import *
 
 #app
 def get_file_path(folder_name):
