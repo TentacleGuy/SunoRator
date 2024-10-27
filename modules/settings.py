@@ -39,5 +39,12 @@ class SettingsManager:
                 "headless": True
             }
         }
+    
+    def update_setting(self, category, key, value):
+        if category in self.settings:
+            self.settings[category][key] = value
+            self.save_settings()
+            return True
+        return False
 
 settings_manager = SettingsManager()

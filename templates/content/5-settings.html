@@ -1,6 +1,78 @@
-
-
 {% block content %}
-    <h1>Settings Page</h1>
-    <p>Inhalt für die Settings-Seite.</p>
+<div class="uk-container">
+    <div class="uk-card uk-card-default uk-card-body">
+        <h2 class="uk-card-title">Settings</h2>
+        
+        <!-- Model Settings -->
+        <div class="uk-section uk-section-small">
+            <h3>Model Settings</h3>
+            <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                <div>
+                    <label class="uk-form-label">Model Name</label>
+                    <input class="uk-input" type="text" id="model-name" data-category="model" data-key="name">
+                </div>
+                <div>
+                    <label class="uk-form-label">Epochs</label>
+                    <input class="uk-input" type="number" id="epochs" data-category="model" data-key="epochs">
+                </div>
+                <div>
+                    <label class="uk-form-label">Learning Rate</label>
+                    <input class="uk-input" type="number" step="0.0001" id="learning-rate" data-category="model" data-key="learning_rate">
+                </div>
+                <div>
+                    <label class="uk-form-label">Batch Size</label>
+                    <input class="uk-input" type="number" id="batch-size" data-category="model" data-key="batch_size">
+                </div>
+            </div>
+        </div>
+
+        <!-- Path Settings -->
+        <div class="uk-section uk-section-small">
+            <h3>Path Settings</h3>
+            <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                <div>
+                    <label class="uk-form-label">Songs Directory</label>
+                    <div class="uk-inline uk-width-1-1">
+                        <input class="uk-input" type="text" id="songs-dir" data-category="paths" data-key="songs_dir">
+                        <button class="uk-button uk-button-default" uk-tooltip="Select Directory">
+                            <span uk-icon="folder"></span>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="uk-form-label">Meta Directory</label>
+                    <div class="uk-inline uk-width-1-1">
+                        <input class="uk-input" type="text" id="meta-dir" data-category="paths" data-key="meta_dir">
+                        <button class="uk-button uk-button-default" uk-tooltip="Select Directory">
+                            <span uk-icon="folder"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scraper Settings -->
+        <div class="uk-section uk-section-small">
+            <h3>Scraper Settings</h3>
+            <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                <div>
+                    <label class="uk-form-label">Delay (seconds)</label>
+                    <input class="uk-input" type="number" id="scraper-delay" data-category="scraper" data-key="delay">
+                </div>
+                <div>
+                    <label class="uk-form-label">Headless Mode</label>
+                    <div class="uk-form-controls">
+                        <label><input class="uk-checkbox" type="checkbox" id="scraper-headless" data-category="scraper" data-key="headless"> Enable headless mode</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="uk-margin-top">
+            <button class="uk-button uk-button-primary" id="save-settings">Save Settings</button>
+            <button class="uk-button uk-button-default" id="reset-settings">Reset to Defaults</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
