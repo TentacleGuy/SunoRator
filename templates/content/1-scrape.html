@@ -1,6 +1,18 @@
 
 {% block content %}
 <div class="uk-container">
+    <div class="uk-card uk-card-default uk-margin">
+        <div class="uk-card-header">
+            <h3>Current Song Info</h3>
+        </div>
+        <div class="uk-card-body">
+            <p><strong>Song URL:</strong> <span id="song-url"></span></p>
+            <p><strong>Playlist URL:</strong> <span id="playlist-url"></span></p>
+            <p><strong>Title:</strong> <span id="song-title"></span></p>
+            <p><strong>Styles:</strong> <span id="song-styles"></span></p>
+        </div>
+    </div>
+    
     <div class="uk-card uk-card-default uk-card-body">
         <!-- Status Indicators -->
         <div class="uk-grid-small uk-child-width-1-4@m" uk-grid>
@@ -30,6 +42,7 @@
         <div class="uk-margin">
             <button class="uk-button uk-button-primary" id="scrape-playlists">URLs Scrapen</button>
             <button class="uk-button uk-button-secondary" id="scrape-songs">Songs Scrapen</button>
+            <progress class="uk-progress" id="scraping-progress" value="0" max="100"></progress>
         </div>
        
     </div>

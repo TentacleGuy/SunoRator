@@ -1,4 +1,3 @@
-/*AJAX Content*/
 document.addEventListener('DOMContentLoaded', function() {
     const links = document.querySelectorAll('a[data-ajax="true"]');
     
@@ -17,18 +16,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    const terminalOutput = document.querySelector('#terminal-output');
     const socket = io();
-    
+    const terminalOutput =  document.getElementById('terminal-output');
+    const progressBars = {
+        overall: document.getElementById('overall-progress'),
+        playlist: document.getElementById('playlist-progress'),
+        song: document.getElementById('song-progress')
+    };
+
     // WebSocket logging
-    socket.on('log_message', function(msg) {
+    socket.on('log_update', function(msg) {
         if (terminalOutput) {
             terminalOutput.innerHTML += msg.data + '\n';
             terminalOutput.scrollTop = terminalOutput.scrollHeight;
         }
     });
 
-    // Handle scraper controls
+    socket.on('progress_update', function(data) {
+        const bar = progressBars[data.type];
+        if (bar) {
+            bar.value = data.value;
+            bar.max = data.max;
+        }
+    });
+
+    socket.on('song_info_update', function(data) {
+        updateSongInfo(data);
+    });
+
+    
+    function updateSongInfo(data) {
+        document.getElementById('song-url').textContent = data.song_url || '';
+        document.getElementById('playlist-url').textContent = data.playlist_url || '';
+        document.getElementById('song-title').textContent = data.title || '';
+        document.getElementById('song-styles').textContent = data.styles?.join(', ') || '';
+    }
+        // Handle scraper controls
     if (document.getElementById('scrape-playlists')) {
         initScraperControls();
     }
@@ -47,6 +70,71 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('generate-lyrics')) {
         initGenerationControls();
     }
+
+
+
+    function initScraperControls() {
+        document.getElementById('scrape-playlists')?.addEventListener('click', function() {
+            fetch('/api/scrape/playlists')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Started playlist scraping');
+                });
+        });
+    
+        document.getElementById('scrape-songs')?.addEventListener('click', function() {
+            fetch('/api/scrape/songs')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Started song scraping');
+                });
+        });
+    }
+    
+    function initPreparationControls() {
+        document.getElementById('prepare-data')?.addEventListener('click', function() {
+            fetch('/api/prepare')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Started data preparation');
+                });
+        });
+    }
+    
+    function initTrainingControls() {
+        document.getElementById('start-training')?.addEventListener('click', function() {
+            fetch('/api/train/start')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Started training');
+                });
+        });
+    }
+    
+    function initGenerationControls() {
+        document.getElementById('generate-lyrics')?.addEventListener('click', function() {
+            const data = {
+                model: document.getElementById('generator-model').value,
+                title: document.getElementById('song-title').value,
+                style: document.getElementById('style-tags').value,
+                prompt: document.getElementById('generation-prompt').value
+            };
+            
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('generation-output').textContent = data.lyrics;
+            });
+        });
+    }
+
+
 
     // Scraper controls
     document.querySelector('#scrape-playlists')?.addEventListener('click', function() {

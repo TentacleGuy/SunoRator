@@ -1,22 +1,23 @@
 import logging
 from flask import Flask, render_template, jsonify, request
-from flask_socketio import SocketIO, emit
 from utils.thread_manager import thread_manager
-from modules import scraper, prepare, trainer, generator, settings
+from modules import scraper, prepare, trainer, generator
+from modules.settings import settings_manager  # Direct import of settings_manager
+from utils.socket_manager import init_socket, socketio
 from utils.utils import *
 from config.vars import *
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio.init_app(app)
 
 # Add WebSocket handler for logging
-@socketio.on('connect')
 def handle_connect():
-    print('Client connected')
-
-def emit_log(message):
-    socketio.emit('log_message', {'data': message})
-
+    def emit_logs():
+        while True:
+            message = thread_manager.log_queue.get()
+            socketio.emit('log_update', {'data': message})
+    
+    thread_manager.start_thread('log_emitter', emit_logs)
 
 # Manuelle Liste der Seiten (URL, Name)
 pages = [
@@ -28,16 +29,16 @@ pages = [
     {"url": "settings", "name": "Settings"}
 ]
 
-#Threads
+##########################THREADS##########################
 @app.route('/api/threads')
-def get_threads():
+def get_active_threads():
     active_threads = thread_manager.get_active_threads()
-    return jsonify({name: thread.name for name, thread in active_threads.items()})
+    return jsonify(active_threads)
 
-@app.route('/api/stop_thread/<thread_name>')
+@app.route('/api/stop/<thread_name>')
 def stop_thread(thread_name):
     thread_manager.stop_thread(thread_name)
-    return jsonify({"status": "success"})
+    return jsonify({"status": "stopped"})
 
 
 ##########################HOME##########################
@@ -59,13 +60,20 @@ def scrape():
 
 @app.route('/api/scrape/playlists')
 def api_scrape_playlists():
-    thread_manager.start_thread('scraper_playlists', scraper.start_playlist_scraping)
-    return jsonify({"status": "started"})
+    success = thread_manager.start_thread(
+        'playlist_scraping', 
+        scraper.WebScraper(thread_manager.log_queue).scrape_playlists
+    )
+    return jsonify({"status": "started" if success else "already running"})
 
 @app.route('/api/scrape/songs')
 def api_scrape_songs():
-    thread_manager.start_thread('scraper_songs', scraper.start_song_scraping)
-    return jsonify({"status": "started"})
+    success = thread_manager.start_thread(
+        'song_scraping',
+        scraper.WebScraper(thread_manager.log_queue).scrape_songs
+    )
+    return jsonify({"status": "started" if success else "already running"})
+
 
 ##########################PREPARE##########################
 @app.route('/prepare')
@@ -111,13 +119,13 @@ def settings():
 def handle_settings():
     if request.method == 'POST':
         data = request.json
-        settings.settings_manager.update_setting(
+        settings_manager.update_setting(
             data['category'],
             data['key'],
             data['value']
         )
         return jsonify({"status": "success"})
-    return jsonify(settings.settings_manager.settings)
+    return jsonify(settings_manager.settings)
 
 
 # Run the app
