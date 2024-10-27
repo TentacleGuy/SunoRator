@@ -16,9 +16,16 @@ function initializeSocketIO() {
     });
 
     socket.on('progress_update', function(data) {
+        //console.log('Progress update received:', data); // Debug log
         const progressBar = document.getElementById(data.type + '-progress');
-        progressBar.value = data.value;
-        progressBar.max = data.max;
+        const label = document.querySelector(`label[for="${data.type}-progress"]`);
+        if (progressBar) {
+            progressBar.value = data.value;
+            progressBar.max = data.max;
+        }
+        if (label) {
+            label.textContent = data.label;
+        }
     });
 
     socket.on('song_info_update', function(data) {
@@ -27,8 +34,10 @@ function initializeSocketIO() {
         document.getElementById('song-title').textContent = data.title;
         document.getElementById('song-styles').textContent = data.styles.join(', ');
     });
-    
+
     socket.on('file_updates', function(data) {
+        //console.log('File updates received:', data);
+        
         const statusElements = {
             'all_meta_tags.json': 'meta-status',
             'all_styles.json': 'styles-status',
@@ -36,13 +45,27 @@ function initializeSocketIO() {
             'song_styles_mapping.json': 'styles-mapping-status'
         };
         
-        for (const file of data.updated_files) {
-            if (statusElements[file]) {
-                document.getElementById(statusElements[file]).classList.add('uk-card-primary');
-                document.getElementById(statusElements[file]).classList.remove('uk-card-secondary');
+        Object.values(statusElements).forEach(elementId => {
+            //console.log('Setting red for:', elementId);
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.remove('uk-card-primary');
+                element.classList.add('uk-card-secondary');
             }
-        }
+        });
+        
+        data.updated_files.forEach(file => {
+            if (statusElements[file]) {
+                //console.log('Setting green for:', statusElements[file]);
+                const element = document.getElementById(statusElements[file]);
+                if (element) {
+                    element.classList.remove('uk-card-secondary');
+                    element.classList.add('uk-card-primary');
+                }
+            }
+        });
     });
+    
 }
 
 // AJAX Navigation

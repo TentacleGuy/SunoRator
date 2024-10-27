@@ -49,6 +49,7 @@ def start():
                             pages=pages, 
                             content=render_template('content/0-home.html'))
 
+
 @app.route('/home')
 def home():
     return render_template('content/0-home.html')

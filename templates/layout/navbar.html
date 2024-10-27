@@ -10,6 +10,26 @@
                     {% endfor %}
                 </ul>
             </div>
+            <div class="uk-navbar-right">
+                <button class="uk-button uk-button-default" uk-toggle="target: #thread-modal">
+                    Active Threads <span class="uk-badge" id="thread-count">0</span>
+                </button>
+            </div>
         </div>
     </div>
 </nav>
+
+<!-- Thread Monitor Modal -->
+<div id="thread-modal" uk-modal>
+    <div class="uk-modal-dialog">
+        <button class="uk-modal-close-default" type="button" uk-close></button>
+        <div class="uk-modal-header">
+            <h2 class="uk-modal-title">Thread Monitor</h2>
+        </div>
+        <div class="uk-modal-body">
+            <div id="active-threads" class="uk-margin">
+                <!-- Thread cards will be inserted here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
