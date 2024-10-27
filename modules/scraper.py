@@ -61,14 +61,13 @@ class WebScraper:
             'styles': song_data.get('styles', [])
         })
 
-
     def init_driver(self):
-        self.log_queue.put("Initialisiere Webdriver...")
+        self.emit_log("Initialisiere Webdriver...")
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.log_queue.put("Webdriver initialisiert.")
+        self.emit_log("Webdriver initialisiert.")
 
     def scrape_playlists(self, stop_event, log_queue):
         playlists = load_json(SCRAPED_PLAYLISTS_FILE)
@@ -76,16 +75,16 @@ class WebScraper:
         
         self.init_driver()
         try:
-            self.log_queue.put("Öffne die Webseite suno.com...")
+            self.emit_log("Öffne die Webseite suno.com...")
             self.driver.get("https://suno.com")
             time.sleep(5)
 
-            self.log_queue.put("Suche nach Playlist-Links...")
+            self.emit_log("Suche nach Playlist-Links...")
             playlist_links = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/playlist/')]")
             playlist_urls = list(set([link.get_attribute("href") for link in playlist_links]))
-            self.log_queue.put(f"Gefundene Playlist-Links: {len(playlist_urls)}")
+            self.emit_log(f"Gefundene Playlist-Links: {len(playlist_urls)}")
 
-            for playlist_url in playlist_urls:
+            for i, playlist_url in enumerate(playlist_urls):
                 if stop_event.is_set():
                     break
                     
@@ -98,10 +97,11 @@ class WebScraper:
                 total_songs += len(song_urls)
                 playlists[playlist_url] = {"song_urls": song_urls}
                 
-                self.log_queue.put(f"Playlist gescrapt: {playlist_url} mit {len(song_urls)} Songs.")
+                self.emit_log(f"Playlist gescrapt: {playlist_url} mit {len(song_urls)} Songs.")
+                self.emit_progress('playlist', i + 1, len(playlist_urls))
 
             save_json(playlists, SCRAPED_PLAYLISTS_FILE)
-            self.log_queue.put(f"Scraping abgeschlossen: {len(playlists)} Playlists und {total_songs} Songs gefunden.")
+            self.emit_log(f"Scraping abgeschlossen: {len(playlists)} Playlists und {total_songs} Songs gefunden.")
             
         finally:
             self.driver.quit()
@@ -110,6 +110,7 @@ class WebScraper:
         self.init_driver()
         try:
             playlists = load_json(SCRAPED_PLAYLISTS_FILE)
+            processed_song_ids = get_processed_song_ids()
             total_songs = sum(len(playlist['song_urls']) for playlist in playlists.values())
             processed_songs = 0
 
@@ -117,9 +118,17 @@ class WebScraper:
             self.emit_progress('overall', 0, total_songs)
 
             for playlist_url, playlist_data in playlists.items():
+                if stop_event.is_set():
+                    break
+
                 for song_url in playlist_data['song_urls']:
                     if stop_event.is_set():
                         break
+
+                    song_id = extract_song_id_from_url(song_url)
+                    if song_id in processed_song_ids:
+                        processed_songs += 1
+                        continue
 
                     song_data = fetch_song_data(self.driver, song_url)
                     if song_data:
@@ -133,21 +142,39 @@ class WebScraper:
             self.driver.quit()
 
     def save_song_data(self, song_data):
-        # Ensure directories exist
-        os.makedirs(SONGS_DIR, exist_ok=True)
-        os.makedirs(SONG_META_DIR, exist_ok=True)
-
-        # Save song file
         song_id = extract_song_id_from_url(song_data['song_url'])
         filename = clean_filename(f"{song_data['title']}_{song_id}.json")
-        filepath = os.path.join(SONGS_DIR, filename)
         
         with file_lock:
-            save_json(song_data, filepath)
-            self.emit_log(f"Saved song data to {filename}")
-
-        # Update metadata files
-        self.update_metadata(song_data)
+            # Save song file
+            save_json(song_data, os.path.join(SONGS_DIR, filename))
+            
+            # Update metadata files
+            all_styles = load_json(STYLES_FILE) or []
+            song_styles_mapping = load_json(SONG_STYLES_MAPPING_FILE) or {}
+            all_meta_tags = load_json(META_TAGS_FILE) or []
+            song_meta_mapping = load_json(SONG_META_MAPPING_FILE) or {}
+            
+            # Update styles
+            new_styles = [style for style in song_data['styles'] if style not in all_styles]
+            if new_styles:
+                all_styles.extend(new_styles)
+                save_json(all_styles, STYLES_FILE)
+            
+            # Update style mapping
+            song_styles_mapping[song_data['song_url']] = song_data['styles']
+            save_json(song_styles_mapping, SONG_STYLES_MAPPING_FILE)
+            
+            # Update meta tags
+            meta_tags = extract_meta_tags(song_data['lyrics'])
+            new_meta_tags = [tag for tag in meta_tags if tag not in all_meta_tags]
+            if new_meta_tags:
+                all_meta_tags.extend(new_meta_tags)
+                save_json(all_meta_tags, META_TAGS_FILE)
+            
+            # Update meta mapping
+            song_meta_mapping[song_data['song_url']] = meta_tags
+            save_json(song_meta_mapping, SONG_META_MAPPING_FILE)
 
     def update_song_data(self, song_data, song_url, all_styles, song_styles_mapping, 
                         all_meta_tags, song_meta_mapping):
