@@ -133,3 +133,8 @@ def handle_settings():
 if __name__ == '__main__':
     logging.info("Server started")
     socketio.run(app, debug=True)
+    
+
+#TODO: ThreadManager in Modal erstellen.
+#Threads pausieren, stoppen, und fortfahren.
+#Informationen zu den threads anzeigen
