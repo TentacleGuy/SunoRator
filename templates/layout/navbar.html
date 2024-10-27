@@ -5,7 +5,7 @@
                 <ul class="uk-navbar-nav">
                     {% for page in pages %}
                     <li class="{% if current_page == page.url %}uk-active{% endif %}">
-                        <a href="{{ url_for(page.url) }}">{{ page.name }}</a>
+                        <a href="{{ url_for(page.url) }}" data-ajax="true">{{ page.name }}</a>
                     </li>
                     {% endfor %}
                 </ul>

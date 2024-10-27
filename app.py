@@ -44,21 +44,22 @@ def stop_thread(thread_name):
 ##########################HOME##########################
 @app.route('/')
 def start():
-    content = render_template('content/0-home.html')
-    return render_template('main.html', current_page="home", pages=pages, content=content)
+    return render_template('main.html', 
+                            current_page="home", 
+                            pages=pages, 
+                            content=render_template('content/0-home.html'))
 
 @app.route('/home')
 def home():
-    content = render_template('content/0-home.html')
-    return render_template('main.html', current_page="home", pages=pages, content=content)
+    return render_template('content/0-home.html')
 
 ##########################SCRAPE##########################
 @app.route('/scrape')
 def scrape():
-    content = render_template('content/1-scrape.html')
-    return render_template('main.html', current_page="scrape", pages=pages, content=content)
+    return render_template('content/1-scrape.html')  # Return only content
 
-@app.route('/api/scrape/playlists')
+
+@app.route('/api/scrape/playlists', methods=['GET', 'POST'])
 def api_scrape_playlists():
     success = thread_manager.start_thread(
         'playlist_scraping', 
@@ -66,7 +67,7 @@ def api_scrape_playlists():
     )
     return jsonify({"status": "started" if success else "already running"})
 
-@app.route('/api/scrape/songs')
+@app.route('/api/scrape/songs', methods=['GET', 'POST'])
 def api_scrape_songs():
     success = thread_manager.start_thread(
         'song_scraping',
@@ -78,8 +79,7 @@ def api_scrape_songs():
 ##########################PREPARE##########################
 @app.route('/prepare')
 def prepare():
-    content = render_template('content/2-prepare.html')
-    return render_template('main.html', current_page="prepare", pages=pages, content=content)
+    return render_template('content/2-prepare.html')
 
 @app.route('/api/prepare')
 def api_prepare():
@@ -89,8 +89,7 @@ def api_prepare():
 #########################TRAIN##########################
 @app.route('/train')
 def train():
-    content = render_template('content/3-train.html')
-    return render_template('main.html', current_page="train", pages=pages, content=content)
+    return render_template('content/3-train.html')
 
 @app.route('/api/train/start')
 def api_train_start():
@@ -100,8 +99,8 @@ def api_train_start():
 #########################GENERATE##########################
 @app.route('/generate')
 def generate():
-    content = render_template('content/4-generate.html')
-    return render_template('main.html', current_page="generate", pages=pages, content=content)
+    return render_template('content/4-generate.html')
+
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
@@ -112,8 +111,9 @@ def api_generate():
 #########################SETTINGS##########################
 @app.route('/settings')
 def settings():
-    content = render_template('content/5-settings.html')
-    return render_template('main.html', current_page="settings", pages=pages, content=content)
+    return render_template('content/5-settings.html')
+
+
 
 @app.route('/api/settings', methods=['GET', 'POST'])
 def handle_settings():

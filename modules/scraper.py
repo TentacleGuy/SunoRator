@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import time
-from utils.utils import save_json, load_json, extract_song_id_from_url, get_processed_song_ids
+from utils.utils import *
 from config.vars import *
 from utils.socket_manager import socketio
 
@@ -41,7 +41,26 @@ class WebScraper:
     def __init__(self, log_queue):
         self.log_queue = log_queue
         self.driver = None
-        self.last_song_info = {}
+
+    def emit_log(self, message):
+        self.log_queue.put(message)
+        socketio.emit('log_update', {'data': message})
+
+    def emit_progress(self, progress_type, value, max_value):
+        socketio.emit('progress_update', {
+            'type': progress_type,
+            'value': value,
+            'max': max_value
+        })
+
+    def emit_song_info(self, song_data, playlist_url):
+        socketio.emit('song_info_update', {
+            'song_url': song_data.get('song_url', ''),
+            'playlist_url': playlist_url,
+            'title': song_data.get('title', ''),
+            'styles': song_data.get('styles', [])
+        })
+
 
     def init_driver(self):
         self.log_queue.put("Initialisiere Webdriver...")
@@ -92,14 +111,10 @@ class WebScraper:
         try:
             playlists = load_json(SCRAPED_PLAYLISTS_FILE)
             total_songs = sum(len(playlist['song_urls']) for playlist in playlists.values())
-            processed_song_ids = get_processed_song_ids()
             processed_songs = 0
 
-
-            all_styles = load_json(STYLES_FILE) or []
-            song_styles_mapping = load_json(SONG_STYLES_MAPPING_FILE) or {}
-            all_meta_tags = load_json(META_TAGS_FILE) or []
-            song_meta_mapping = load_json(SONG_META_MAPPING_FILE) or {}
+            self.emit_log("Starting song scraping process...")
+            self.emit_progress('overall', 0, total_songs)
 
             for playlist_url, playlist_data in playlists.items():
                 for song_url in playlist_data['song_urls']:
@@ -108,29 +123,31 @@ class WebScraper:
 
                     song_data = fetch_song_data(self.driver, song_url)
                     if song_data:
-                        # Update song info display
-                        socketio.emit('song_info_update', {
-                            'song_url': song_url,
-                            'playlist_url': playlist_url,
-                            'title': song_data['title'],
-                            'styles': song_data['styles']
-                        })
-
-                        # Update progress
-                        processed_songs += 1
-                        socketio.emit('progress_update', {
-                            'type': 'song',
-                            'value': processed_songs,
-                            'max': total_songs
-                        })
-
-                        # Save song data
+                        self.emit_song_info(song_data, playlist_url)
                         self.save_song_data(song_data)
-
-                    log_queue.put(f"Processed song {processed_songs} of {total_songs}")
+                        processed_songs += 1
+                        self.emit_progress('overall', processed_songs, total_songs)
+                        self.emit_log(f"Processed song {processed_songs}/{total_songs}: {song_data['title']}")
 
         finally:
             self.driver.quit()
+
+    def save_song_data(self, song_data):
+        # Ensure directories exist
+        os.makedirs(SONGS_DIR, exist_ok=True)
+        os.makedirs(SONG_META_DIR, exist_ok=True)
+
+        # Save song file
+        song_id = extract_song_id_from_url(song_data['song_url'])
+        filename = clean_filename(f"{song_data['title']}_{song_id}.json")
+        filepath = os.path.join(SONGS_DIR, filename)
+        
+        with file_lock:
+            save_json(song_data, filepath)
+            self.emit_log(f"Saved song data to {filename}")
+
+        # Update metadata files
+        self.update_metadata(song_data)
 
     def update_song_data(self, song_data, song_url, all_styles, song_styles_mapping, 
                         all_meta_tags, song_meta_mapping):

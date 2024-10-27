@@ -1,31 +1,16 @@
+// Main initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    const links = document.querySelectorAll('a[data-ajax="true"]');
-    
-    links.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            const url = this.getAttribute('href');
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('main-content').innerHTML = html;
-                })
-                .catch(error => console.error('Error loading content:', error));
-                console.log(url);
-        });
-    });
+    initializeSocketIO();
+    initializeNavigation();
+    loadPageSpecificFunctions();
+});
 
+// Socket.IO initialization
+function initializeSocketIO() {
     const socket = io();
-    const terminalOutput =  document.getElementById('terminal-output');
-    const progressBars = {
-        overall: document.getElementById('overall-progress'),
-        playlist: document.getElementById('playlist-progress'),
-        song: document.getElementById('song-progress')
-    };
-
-    // WebSocket logging
+    
     socket.on('log_update', function(msg) {
+        const terminalOutput = document.getElementById('terminal-output');
         if (terminalOutput) {
             terminalOutput.innerHTML += msg.data + '\n';
             terminalOutput.scrollTop = terminalOutput.scrollHeight;
@@ -33,99 +18,164 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('progress_update', function(data) {
-        const bar = progressBars[data.type];
-        if (bar) {
-            bar.value = data.value;
-            bar.max = data.max;
+        const progressBar = document.getElementById(`${data.type}-progress`);
+        if (progressBar) {
+            progressBar.value = data.value;
+            progressBar.max = data.max;
+            const label = document.getElementById(`${data.type}-progress-label`);
+            if (label) {
+                label.textContent = `${data.value}/${data.max}`;
+            }
         }
     });
 
     socket.on('song_info_update', function(data) {
         updateSongInfo(data);
     });
+}
 
-    
-    function updateSongInfo(data) {
-        document.getElementById('song-url').textContent = data.song_url || '';
-        document.getElementById('playlist-url').textContent = data.playlist_url || '';
-        document.getElementById('song-title').textContent = data.title || '';
-        document.getElementById('song-styles').textContent = data.styles?.join(', ') || '';
-    }
-        // Handle scraper controls
-    if (document.getElementById('scrape-playlists')) {
-        initScraperControls();
-    }
-    
-    // Handle preparation controls
-    if (document.getElementById('prepare-data')) {
-        initPreparationControls();
-    }
-    
-    // Handle training controls
-    if (document.getElementById('start-training')) {
-        initTrainingControls();
-    }
-    
-    // Handle generation controls
-    if (document.getElementById('generate-lyrics')) {
-        initGenerationControls();
-    }
+// AJAX Navigation
+function initializeNavigation() {
+    document.querySelectorAll('a[data-ajax="true"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('href');
+            
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('main-content').innerHTML = html;
+                // Update URL without page reload
+                history.pushState({}, '', url);
+                loadPageSpecificFunctions();
+            });
+        });
+    });
+}
 
 
+// Page-specific function loader
+function loadPageSpecificFunctions() {
+    // Get current page from URL path
+    const path = window.location.pathname;
+    const currentPage = path.split('/').pop() || 'home';
+    
+    // Remove existing event listeners
+    removeExistingListeners();
+    
+    // Load page-specific functions
+    switch(currentPage) {
+        case 'scrape':
+            initScraperControls();
+            break;
+        case 'prepare':
+            initPreparationControls();
+            break;
+        case 'train':
+            initTrainingControls();
+            break;
+        case 'generate':
+            initGenerationControls();
+            break;
+        case 'settings':
+            initSettingsControls();
+            break;
+    }
+}
 
-    function initScraperControls() {
-        document.getElementById('scrape-playlists')?.addEventListener('click', function() {
-            fetch('/api/scrape/playlists')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Started playlist scraping');
-                });
-        });
+// Scraper Controls
+function initScraperControls() {
+    const playlistsBtn = document.getElementById('scrape-playlists');
+    const songsBtn = document.getElementById('scrape-songs');
     
-        document.getElementById('scrape-songs')?.addEventListener('click', function() {
-            fetch('/api/scrape/songs')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Started song scraping');
-                });
-        });
-    }
-    
-    function initPreparationControls() {
-        document.getElementById('prepare-data')?.addEventListener('click', function() {
-            fetch('/api/prepare')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Started data preparation');
-                });
+    if (playlistsBtn) {
+        playlistsBtn.addEventListener('click', function() {
+            fetch('/api/scrape/playlists', { method: 'POST' })
+                .then(response => response.text())  // Get text first
+                .then(text => {
+                    try {
+                        return JSON.parse(text);  // Try to parse as JSON
+                    } catch {
+                        return { message: text };  // If not JSON, wrap in object
+                    }
+                })
+                .then(data => console.log('Started playlist scraping:', data));
         });
     }
     
-    function initTrainingControls() {
-        document.getElementById('start-training')?.addEventListener('click', function() {
-            fetch('/api/train/start')
+    if (songsBtn) {
+        songsBtn.addEventListener('click', function() {
+            fetch('/api/scrape/songs', { method: 'POST' })
+                .then(response => response.text())
+                .then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return { message: text };
+                    }
+                })
+                .then(data => console.log('Started song scraping:', data));
+        });
+    }
+}
+
+// Preparation Controls
+function initPreparationControls() {
+    const prepareBtn = document.getElementById('prepare-data');
+    if (prepareBtn) {
+        prepareBtn.addEventListener('click', function() {
+            fetch('/api/prepare', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    console.log('Started training');
-                });
+                .then(data => console.log('Started data preparation'));
+        });
+    }
+}
+
+// Training Controls
+function initTrainingControls() {
+    const startTrainingBtn = document.getElementById('start-training');
+    const stopTrainingBtn = document.getElementById('stop-training');
+    
+    if (startTrainingBtn) {
+        startTrainingBtn.addEventListener('click', function() {
+            const trainingData = collectTrainingParameters();
+            fetch('/api/train/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(trainingData)
+            })
+            .then(response => response.json())
+            .then(data => console.log('Started training'));
         });
     }
     
-    function initGenerationControls() {
-        document.getElementById('generate-lyrics')?.addEventListener('click', function() {
-            const data = {
-                model: document.getElementById('generator-model').value,
+    if (stopTrainingBtn) {
+        stopTrainingBtn.addEventListener('click', function() {
+            fetch('/api/train/stop', { method: 'POST' });
+        });
+    }
+}
+
+// Generation Controls
+function initGenerationControls() {
+    const generateBtn = document.getElementById('generate-lyrics');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
+            const generationData = {
+                model: document.getElementById('model-select').value,
                 title: document.getElementById('song-title').value,
-                style: document.getElementById('style-tags').value,
-                prompt: document.getElementById('generation-prompt').value
+                style: document.getElementById('style-input').value,
+                prompt: document.getElementById('prompt-input').value
             };
             
             fetch('/api/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(generationData)
             })
             .then(response => response.json())
             .then(data => {
@@ -133,110 +183,66 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+}
 
-
-
-    // Scraper controls
-    document.querySelector('#scrape-playlists')?.addEventListener('click', function() {
-        fetch('/api/scrape/playlists')
+// Settings Controls
+function initSettingsControls() {
+    const saveSettingsBtn = document.getElementById('save-settings');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', function() {
+            const settings = collectSettingsData();
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
             .then(response => response.json())
-            .then(data => console.log('Started playlist scraping'));
-    });
-
-    document.querySelector('#scrape-songs')?.addEventListener('click', function() {
-        fetch('/api/scrape/songs')
-            .then(response => response.json())
-            .then(data => console.log('Started song scraping'));
-    });
-
-    // Preparation controls
-    document.querySelector('#prepare-data')?.addEventListener('click', function() {
-        fetch('/api/prepare')
-            .then(response => response.json())
-            .then(data => console.log('Started data preparation'));
-    });
-
-    // Training controls
-    document.querySelector('#start-training')?.addEventListener('click', function() {
-        fetch('/api/train/start')
-            .then(response => response.json())
-            .then(data => console.log('Started training'));
-    });
-
-    // Generation controls
-    document.querySelector('#generate-lyrics')?.addEventListener('click', function() {
-        const data = {
-            model: document.querySelector('#generator-model').value,
-            title: document.querySelector('#song-title').value,
-            style: document.querySelector('#style-tags').value,
-            prompt: document.querySelector('#generation-prompt').value
-        };
-        
-        fetch('/api/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.querySelector('#generation-output').textContent = data.lyrics;
+            .then(data => console.log('Settings saved'));
         });
-    });
-    
-    // Load current settings
-    fetch('/api/settings')
-    .then(response => response.json())
-    .then(settings => {
-        Object.entries(settings).forEach(([category, values]) => {
-            Object.entries(values).forEach(([key, value]) => {
-                const element = document.querySelector(`[data-category="${category}"][data-key="${key}"]`);
-                if (element) {
-                    if (element.type === 'checkbox') {
-                        element.checked = value;
-                    } else {
-                        element.value = value;
-                    }
-                }
-            });
-        });
-    });
+    }
+}
 
-    // Save settings
-    document.getElementById('save-settings').addEventListener('click', function() {
-        const settings = {};
-        document.querySelectorAll('[data-category][data-key]').forEach(element => {
-            const category = element.dataset.category;
-            const key = element.dataset.key;
-            const value = element.type === 'checkbox' ? element.checked : element.value;
-            
-            if (!settings[category]) settings[category] = {};
-            settings[category][key] = value;
-        });
-
-        fetch('/api/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(settings)
-        })
-        .then(() => UIkit.notification({
-            message: 'Settings saved successfully!',
-            status: 'success'
-        }));
+// Helper Functions
+function removeExistingListeners() {
+    const buttons = document.querySelectorAll('button[data-initialized]');
+    buttons.forEach(button => {
+        const clone = button.cloneNode(true);
+        button.parentNode.replaceChild(clone, button);
     });
+}
 
-    // Reset settings
-    document.getElementById('reset-settings').addEventListener('click', function() {
-        if (confirm('Reset all settings to defaults?')) {
-            fetch('/api/settings/reset')
-                .then(response => response.json())
-                .then(settings => {
-                    location.reload();
-                });
+function updateProgress(data) {
+    const progressBar = document.getElementById(`${data.type}-progress`);
+    if (progressBar) {
+        progressBar.value = data.value;
+        progressBar.max = data.max;
+    }
+}
+
+function updateSongInfo(data) {
+    Object.entries(data).forEach(([key, value]) => {
+        const element = document.getElementById(`song-${key}`);
+        if (element) {
+            element.textContent = Array.isArray(value) ? value.join(', ') : value;
         }
     });
-});
+}
 
+function collectTrainingParameters() {
+    return {
+        epochs: document.getElementById('epochs').value,
+        learningRate: document.getElementById('learning-rate').value,
+        batchSize: document.getElementById('batch-size').value,
+        maxLength: document.getElementById('max-length').value,
+        warmupSteps: document.getElementById('warmup-steps').value,
+        weightDecay: document.getElementById('weight-decay').value,
+        gradientAccumulationSteps: document.getElementById('gradient-accumulation-steps').value
+    };
+}
+
+function collectSettingsData() {
+    return {
+        setting1: document.getElementById('setting1').value,
+        setting2: document.getElementById('setting2').value
+    };
+}
