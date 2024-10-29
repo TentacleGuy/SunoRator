@@ -83,11 +83,11 @@ class WebScraper:
                 self.driver.quit()
                 self.driver = None
 
-    def scrape_playlists(self, stop_event, log_queue):
+    def scrape_playlists(self, stop_event, log_queue, pause_event):
         playlists = load_json(SCRAPED_PLAYLISTS_FILE)
         total_songs = 0
         
-        self.init_driver()  # Initialize driver at start of function
+        self.init_driver()
 
         try:
             self.emit_log("Opening suno.com...")
@@ -103,6 +103,11 @@ class WebScraper:
                 if stop_event.is_set():
                     break
                     
+                while pause_event.is_set():
+                    time.sleep(0.1)
+                    if stop_event.is_set():
+                        break
+                        
                 self.driver.get(playlist_url)
                 time.sleep(5)
 
@@ -118,12 +123,18 @@ class WebScraper:
                 self.emit_progress('playlist', i + 1, len(playlist_urls))
 
             self.emit_log(f"Scraping completed: {len(playlists)} playlists and {total_songs} songs found")
-            
+        
         except Exception as e:
             self.emit_log(f"Error during playlist scraping: {str(e)}")
             raise
 
-    def scrape_songs(self, stop_event, log_queue):
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None  
+        
+
+    def scrape_songs(self, stop_event, log_queue, pause_event):
         self.init_driver()
         try:
             processed_song_ids = get_processed_song_ids()
@@ -141,6 +152,7 @@ class WebScraper:
 
             for playlist_url, playlist_data in playlists.items():
                 if stop_event.is_set():
+                    self.emit_log("Stopping song scraping...")
                     break
 
                 current_playlist += 1
@@ -152,7 +164,13 @@ class WebScraper:
                 
                 for song_url in playlist_data['song_urls']:
                     if stop_event.is_set():
+                        self.emit_log("Stopping song scraping...")
                         break
+
+                    while pause_event.is_set():
+                        time.sleep(0.1)
+                        if stop_event.is_set():
+                            break
 
                     current_song_in_playlist += 1
                     self.emit_progress('song', current_song_in_playlist, songs_in_playlist)

@@ -33,13 +33,25 @@ pages = [
 @app.route('/api/threads')
 def get_active_threads():
     active_threads = thread_manager.get_active_threads()
+    # The thread manager now returns a dictionary with the correct format
     return jsonify(active_threads)
 
-@app.route('/api/stop/<thread_name>')
+@app.route('/api/threads')
+
+@app.route('/api/threads/<thread_name>/stop')
 def stop_thread(thread_name):
     thread_manager.stop_thread(thread_name)
     return jsonify({"status": "stopped"})
 
+@app.route('/api/threads/<thread_name>/pause')
+def pause_thread(thread_name):
+    thread_manager.pause_thread(thread_name)
+    return jsonify({"status": "paused"})
+
+@app.route('/api/threads/<thread_name>/resume')
+def resume_thread(thread_name):
+    thread_manager.resume_thread(thread_name)
+    return jsonify({"status": "resumed"})
 
 ##########################HOME##########################
 @app.route('/')

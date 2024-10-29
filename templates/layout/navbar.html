@@ -24,12 +24,26 @@
     <div class="uk-modal-dialog">
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div class="uk-modal-header">
-            <h2 class="uk-modal-title">Thread Monitor</h2>
+            <h2 class="uk-modal-title">Task Manager</h2>
         </div>
         <div class="uk-modal-body">
             <div id="active-threads" class="uk-margin">
-                <!-- Thread cards will be inserted here dynamically -->
+                <!-- Task cards will be dynamically inserted here -->
+                <template id="task-card-template">
+                    <div class="uk-card uk-card-default uk-margin-small">
+                        <div class="uk-card-body">
+                            <h3 class="uk-card-title task-name"></h3>
+                            <p class="task-status"></p>
+                            <div class="uk-button-group">
+                                <button class="uk-button uk-button-primary pause-task">Pause</button>
+                                <button class="uk-button uk-button-success resume-task" style="display:none">Resume</button>
+                                <button class="uk-button uk-button-danger stop-task">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
 </div>
+

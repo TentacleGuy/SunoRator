@@ -1,6 +1,7 @@
 // Main initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeSocketIO();
+    initializeTaskManager();
     initializeNavigation();
     loadPageSpecificFunctions();
 });
@@ -66,6 +67,59 @@ function initializeSocketIO() {
         });
     });
     
+}
+
+// Taskmanager Initialization
+function initializeTaskManager() {
+    const socket = io();
+    const threadModal = document.getElementById('thread-modal');
+    const activeThreadsContainer = document.getElementById('active-threads');
+    const template = document.getElementById('task-card-template');
+
+    function updateTasks() {
+        fetch('/api/threads')
+            .then(response => response.json())
+            .then(threads => {
+                updateThreadCount(Object.keys(threads).length);
+                activeThreadsContainer.innerHTML = '';
+                Object.entries(threads).forEach(([name, thread]) => {
+                    const card = template.content.cloneNode(true);
+                    
+                    card.querySelector('.task-name').textContent = name;
+                    card.querySelector('.task-status').textContent = `Status: ${thread.status}`;
+                    
+                    const pauseBtn = card.querySelector('.pause-task');
+                    const resumeBtn = card.querySelector('.resume-task');
+                    
+                    if (thread.status === 'paused') {
+                        pauseBtn.style.display = 'none';
+                        resumeBtn.style.display = 'inline-block';
+                    } else {
+                        pauseBtn.style.display = 'inline-block';
+                        resumeBtn.style.display = 'none';
+                    }
+
+                    pauseBtn.onclick = () => {
+                        fetch(`/api/threads/${name}/pause`).then(() => updateTasks());
+                    };
+
+                    resumeBtn.onclick = () => {
+                        fetch(`/api/threads/${name}/resume`).then(() => updateTasks());
+                    };
+
+                    card.querySelector('.stop-task').onclick = () => {
+                        fetch(`/api/threads/${name}/stop`).then(() => updateTasks());
+                    };
+
+                    activeThreadsContainer.appendChild(card);
+                });
+            });
+    }
+
+    // Listen for thread events
+    socket.on('thread_started', updateTasks);
+    socket.on('thread_stopped', updateTasks);
+    socket.on('thread_status_changed', updateTasks);
 }
 
 // AJAX Navigation
@@ -279,4 +333,11 @@ function collectSettingsData() {
         setting1: document.getElementById('setting1').value,
         setting2: document.getElementById('setting2').value
     };
+}
+
+function updateThreadCount(count) {
+    const threadCountElement = document.getElementById('thread-count');
+    if (threadCountElement) {
+        threadCountElement.textContent = count;
+    }
 }
