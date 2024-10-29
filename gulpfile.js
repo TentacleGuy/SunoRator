@@ -5,7 +5,6 @@ const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 const path = require('path');
 
-// Function to get the output path for a given source path
 function getOutputPath(fileType) {
     return path.resolve('static/dist', fileType);
 }
@@ -13,26 +12,36 @@ function getOutputPath(fileType) {
 // Compile SCSS to CSS and minify it
 gulp.task('sass', function() {
     return gulp.src('static/src/css/*.scss')
-        .pipe(sass().on('error', sass.logError))  // Compile SCSS to CSS
-        .pipe(cleanCSS())  // Minify CSS
-        .pipe(rename({ suffix: '.min' }))  // Add .min suffix
-        .pipe(gulp.dest(getOutputPath('css')));  // Save to 'dist/css'
+        .pipe(sass().on('error', sass.logError))
+        .pipe(cleanCSS())
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(gulp.dest(getOutputPath('css')));
 });
 
-// Minify existing CSS files and rename with .min suffix
+// Handle CSS files - copy .min.css directly, process others
 gulp.task('minify-css', function() {
-    return gulp.src('static/src/css/*.css')
-        .pipe(cleanCSS())  // Minify CSS
-        .pipe(rename({ suffix: '.min' }))  // Add .min suffix
-        .pipe(gulp.dest(getOutputPath('css')));  // Save to 'dist/css'
+    // Copy pre-minified CSS files directly
+    gulp.src('static/src/css/*.min.css')
+        .pipe(gulp.dest(getOutputPath('css')));
+    
+    // Process non-minified CSS files
+    return gulp.src(['static/src/css/*.css', '!static/src/css/*.min.css'])
+        .pipe(cleanCSS())
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(gulp.dest(getOutputPath('css')));
 });
 
-// Minify JavaScript files and rename with .min suffix
+// Handle JS files - copy .min.js directly, process others
 gulp.task('js', function() {
-    return gulp.src('static/src/js/*.js')
-        .pipe(uglify())  // Minify JavaScript
-        .pipe(rename({ suffix: '.min' }))  // Add .min suffix
-        .pipe(gulp.dest(getOutputPath('js')));  // Save to 'dist/js'
+    // Copy pre-minified JS files directly
+    gulp.src('static/src/js/*.min.js')
+        .pipe(gulp.dest(getOutputPath('js')));
+    
+    // Process non-minified JS files
+    return gulp.src(['static/src/js/*.js', '!static/src/js/*.min.js'])
+        .pipe(uglify())
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(gulp.dest(getOutputPath('js')));
 });
 
 // Watch files for changes

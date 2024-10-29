@@ -1,49 +1,56 @@
-<nav class="uk-navbar-container">
-    <div class="uk-container">
-        <div uk-navbar>
-            <div class="uk-navbar-left">
-                <ul class="uk-navbar-nav">
-                    {% for page in pages %}
-                    <li class="{% if current_page == page.url %}uk-active{% endif %}">
-                        <a href="{{ url_for(page.url) }}" data-ajax="true">{{ page.name }}</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <div class="uk-navbar-right">
-                <button class="uk-button uk-button-default" uk-toggle="target: #thread-modal">
-                    Active Threads <span class="uk-badge" id="thread-count">0</span>
-                </button>
-            </div>
+<aside class="sidebar-wrapper" data-simplebar>
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <img src="{{ url_for('static', filename='images/logo-icon.png') }}" class="logo-img" alt="">
+        </div>
+        <div class="logo-name flex-grow-1">
+            <h5 class="mb-0">Suno Kit</h5>
+        </div>
+        <div class="sidebar-close">
+            <span class="material-icons-outlined">close</span>
         </div>
     </div>
-</nav>
+    <div class="sidebar-nav">
+        <ul class="metismenu" id="sidenav">
+            {% for page in pages %}
+            <li class="{% if current_page == page.url %}mm-active{% endif %}">
+                <a href="{{ url_for(page.url) }}" data-ajax="true">
+                    <div class="parent-icon">
+                        <i class="material-icons-outlined">{{ page.icon|default('article') }}</i>
+                    </div>
+                    <div class="menu-title">{{ page.name }}</div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</aside>
 
 <!-- Thread Monitor Modal -->
-<div id="thread-modal" uk-modal>
-    <div class="uk-modal-dialog">
-        <button class="uk-modal-close-default" type="button" uk-close></button>
-        <div class="uk-modal-header">
-            <h2 class="uk-modal-title">Task Manager</h2>
-        </div>
-        <div class="uk-modal-body">
-            <div id="active-threads" class="uk-margin">
-                <!-- Task cards will be dynamically inserted here -->
-                <template id="task-card-template">
-                    <div class="uk-card uk-card-default uk-margin-small">
-                        <div class="uk-card-body">
-                            <h3 class="uk-card-title task-name"></h3>
-                            <p class="task-status"></p>
-                            <div class="uk-button-group">
-                                <button class="uk-button uk-button-primary pause-task">Pause</button>
-                                <button class="uk-button uk-button-success resume-task" style="display:none">Resume</button>
-                                <button class="uk-button uk-button-danger stop-task">Stop</button>
+<div class="modal fade" id="thread-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Task Manager</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="active-threads">
+                    <template id="task-card-template">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title task-name"></h5>
+                                <p class="card-text task-status"></p>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary pause-task">Pause</button>
+                                    <button class="btn btn-success resume-task" style="display:none">Resume</button>
+                                    <button class="btn btn-danger stop-task">Stop</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
 </div>
-

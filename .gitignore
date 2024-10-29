@@ -6,3 +6,5 @@ node_modules/
 song_meta/
 
 songs/
+
+./static/dist/
