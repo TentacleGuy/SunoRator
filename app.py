@@ -132,7 +132,7 @@ def handle_settings():
 # Run the app
 if __name__ == '__main__':
     logging.info("Server started")
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
     
 
 #TODO: ThreadManager in Modal erstellen.
