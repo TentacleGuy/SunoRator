@@ -3,12 +3,6 @@ __pycache__/
 
 node_modules/
 
-package.json
-
-gulpfile.js
-
-package-lock.json
-
 song_meta/
 
 songs/
