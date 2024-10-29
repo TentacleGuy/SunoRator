@@ -44,12 +44,20 @@ gulp.task('js', function() {
         .pipe(gulp.dest(getOutputPath('js')));
 });
 
+// Copy plugins folder
+gulp.task('plugins', function() {
+    return gulp.src('static/src/plugins/**/*')
+        .pipe(gulp.dest(getOutputPath('plugins')));
+});
+
 // Watch files for changes
 gulp.task('watch', function() {
     gulp.watch('static/src/css/*.scss', gulp.series('sass'));
     gulp.watch('static/src/css/*.css', gulp.series('minify-css'));
     gulp.watch('static/src/js/*.js', gulp.series('js'));
+    gulp.watch('static/src/plugins/**/*', gulp.series('plugins'));
+
 });
 
 // Default task
-gulp.task('default', gulp.series('sass', 'minify-css', 'js', 'watch'));
+gulp.task('default', gulp.series('sass', 'minify-css', 'js', 'plugins', 'watch'));
