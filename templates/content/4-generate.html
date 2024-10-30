@@ -1,36 +1,47 @@
-
 {% block content %}
-<div class="uk-container">
-    <div class="uk-card uk-card-default uk-card-body">
-        <!-- Model Selection -->
-        <div class="uk-margin">
-            <label class="uk-form-label">Model</label>
-            <select class="uk-select" id="generator-model"></select>
+<div class="container">
+    <div class="row">
+        <!-- Generation Controls Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Generation Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="generator-model"></select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Song Title</label>
+                        <input class="form-control" type="text" id="song-title">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Style/Metatags</label>
+                        <input class="form-control" type="text" id="style-tags">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Prompt</label>
+                        <textarea class="form-control" rows="4" id="generation-prompt"></textarea>
+                    </div>
+
+                    <button class="btn btn-primary w-100" id="generate-lyrics">Generate Lyrics</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Input Fields -->
-        <div class="uk-margin">
-            <label class="uk-form-label">Song Title</label>
-            <input class="uk-input" type="text" id="song-title">
-        </div>
-
-        <div class="uk-margin">
-            <label class="uk-form-label">Style/Metatags</label>
-            <input class="uk-input" type="text" id="style-tags">
-        </div>
-
-        <div class="uk-margin">
-            <label class="uk-form-label">Prompt</label>
-            <textarea class="uk-textarea" rows="4" id="generation-prompt"></textarea>
-        </div>
-
-        <!-- Generate Button -->
-        <button class="uk-button uk-button-primary" id="generate-lyrics">Generate Lyrics</button>
-
-        <!-- Output -->
-        <div class="uk-margin">
-            <div class="uk-card uk-card-default uk-card-body uk-padding-small">
-                <pre id="generation-output" class="uk-height-medium uk-overflow-auto"></pre>
+        <!-- Output Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Generated Lyrics</h5>
+                </div>
+                <div class="card-body">
+                    <pre id="generation-output" class="bg-light p-3 rounded" style="height: 400px; overflow-y: auto;"></pre>
+                </div>
             </div>
         </div>
     </div>

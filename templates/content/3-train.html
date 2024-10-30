@@ -1,39 +1,70 @@
 {% block content %}
-<div class="uk-container">
-    <div class="uk-card uk-card-default uk-card-body">
-        <!-- Model Settings -->
-        <div class="uk-margin">
-            <label class="uk-form-label">Model</label>
-            <select class="uk-select" id="model-select"></select>
-        </div>
-
-        <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
-            <div>
-                <label class="uk-form-label">Epochs</label>
-                <input class="uk-input" type="number" id="epochs" value="3">
+<div class="container">
+    <div class="row">
+        <!-- Model Selection Card -->
+        <div class="col-12 mb-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Model Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="model-select"></select>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Epochs</label>
+                            <input class="form-control" type="number" id="epochs" value="3">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Learning Rate</label>
+                            <input class="form-control" type="number" id="learning-rate" value="0.0001">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Batch Size</label>
+                            <input class="form-control" type="number" id="batch-size" value="8">
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="uk-form-label">Learning Rate</label>
-                <input class="uk-input" type="number" id="learning-rate" value="0.0001">
+        </div>
+
+        <!-- Training Controls Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Training Controls</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" id="start-training">Start Training</button>
+                        <button class="btn btn-danger" id="stop-training">Stop Training</button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="uk-form-label">Batch Size</label>
-                <input class="uk-input" type="number" id="batch-size" value="8">
+        </div>
+
+        <!-- Progress Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Training Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div id="training-progress" 
+                         data-chart="trainingChart"
+                         data-height="280"
+                         data-colors='["#7928ca"]'
+                         data-gradient-colors='["#ff0080"]'
+                         data-label-format="{value}/{max}"
+                         data-display-type="percentage">
+                    </div>
+                    <div id="status-display" class="text-muted mt-2"></div>
+                </div>
             </div>
         </div>
-
-        <!-- Controls -->
-        <div class="uk-margin">
-            <button class="uk-button uk-button-primary" id="start-training">Start Training</button>
-            <button class="uk-button uk-button-danger" id="stop-training">Stop Training</button>
-        </div>
-
-        <!-- Progress -->
-        <div class="uk-margin">
-            <progress class="uk-progress" id="training-progress" value="0" max="100"></progress>
-            <div id="status-display" class="uk-text-meta"></div>
-        </div>
-
     </div>
 </div>
 {% endblock %}

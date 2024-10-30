@@ -50,14 +50,20 @@ gulp.task('plugins', function() {
         .pipe(gulp.dest(getOutputPath('plugins')));
 });
 
+gulp.task('assets', function() {
+    return gulp.src('static/src/assets/**/*')
+        .pipe(gulp.dest(getOutputPath('assets')));
+});
+
+
 // Watch files for changes
 gulp.task('watch', function() {
     gulp.watch('static/src/css/*.scss', gulp.series('sass'));
     gulp.watch('static/src/css/*.css', gulp.series('minify-css'));
     gulp.watch('static/src/js/*.js', gulp.series('js'));
     gulp.watch('static/src/plugins/**/*', gulp.series('plugins'));
-
+    gulp.watch('static/src/assets/**/*', gulp.series('assets'));
 });
 
 // Default task
-gulp.task('default', gulp.series('sass', 'minify-css', 'js', 'plugins', 'watch'));
+gulp.task('default', gulp.series('sass', 'minify-css', 'js', 'plugins', 'assets', 'watch'));

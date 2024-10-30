@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTaskManager();
     initializeNavigation();
     loadPageSpecificFunctions();
+    initializeLoggingDrawer()
 });
 
 // Socket.IO initialization
@@ -17,6 +18,21 @@ function initializeSocketIO() {
     });
 
     socket.on('progress_update', function(data) {
+        const progressBar = document.getElementById(data.type + '-progress');
+        const label = document.querySelector(`label[for="${data.type}-progress"]`);
+        
+        if (progressBar && progressBar.dataset.chart) {
+            const chart = window[progressBar.dataset.chart];
+            chart.updateProgress(data.value, data.max);
+        }
+        
+        if (label) {
+            label.textContent = data.label;
+        }
+    });
+      
+
+    /*socket.on('progress_update', function(data) {
         //console.log('Progress update received:', data); // Debug log
         const progressBar = document.getElementById(data.type + '-progress');
         const label = document.querySelector(`label[for="${data.type}-progress"]`);
@@ -27,7 +43,7 @@ function initializeSocketIO() {
         if (label) {
             label.textContent = data.label;
         }
-    });
+    });*/
 
     socket.on('song_info_update', function(data) {
         document.getElementById('song-url').textContent = data.song_url;
@@ -145,7 +161,6 @@ function initializeNavigation() {
     });
 }
 
-
 // Page-specific function loader
 function loadPageSpecificFunctions() {
     // Get current page from URL path
@@ -175,10 +190,30 @@ function loadPageSpecificFunctions() {
     }
 }
 
+function initializeDonutCharts(chartIds) {
+    chartIds.forEach(id => {
+        const chartContainer = document.getElementById(`${id}-progress`);
+        if (chartContainer) {
+            const chartOptions = {
+                height: parseInt(chartContainer.dataset.height || 180),
+                colors: JSON.parse(chartContainer.dataset.colors || '["#ee0979"]'),
+                gradientColors: JSON.parse(chartContainer.dataset.gradientColors || '["#ffd200"]'),
+                label: chartContainer.dataset.labelFormat || `${id} Progress`
+            };
+            
+            const chart = createProgressChart(`#${id}-progress`, chartOptions);
+            window[chartContainer.dataset.chart] = chart;
+            chart.updateProgress(0);
+        }
+    });
+}
 // Scraper Controls
 function initScraperControls() {
     const playlistsBtn = document.getElementById('scrape-playlists');
     const songsBtn = document.getElementById('scrape-songs');
+    const charts = ['overall', 'playlist', 'song'];
+   
+    initializeDonutCharts(charts);
     
     if (playlistsBtn) {
         playlistsBtn.addEventListener('click', function() {
@@ -340,4 +375,119 @@ function updateThreadCount(count) {
     if (threadCountElement) {
         threadCountElement.textContent = count;
     }
+}
+
+function createProgressChart(elementId, options = {}) {
+    const element = document.querySelector(elementId);
+    const displayType = element.dataset.displayType || 'percentage';
+    
+    let currentValue = 0;
+    let maxValue = 0;
+    
+    const defaultOptions = {
+        series: [0],
+        height: options.height || 280,
+        colors: options.colors || ["#ee0979"],
+        gradientColors: options.gradientColors || ['#ffd200']
+    };
+
+    const chartOptions = {
+        series: [0],
+        chart: {
+            height: defaultOptions.height,
+            type: 'radialBar',
+            toolbar: { show: false }
+        },
+        plotOptions: {
+            radialBar: {
+                startAngle: -135,
+                endAngle: 135,
+                hollow: {
+                    size: '70%'
+                },
+                track: {
+                    background: 'rgba(0, 0, 0, 0.1)',
+                    strokeWidth: '67%'
+                },
+                dataLabels: {
+                    show: true,
+                    name: {
+                        show: false
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '24px',
+                        formatter: function() {
+                            if (displayType === 'percentage') {
+                                const percentage = maxValue > 0 ? Math.round((currentValue / maxValue) * 100) : 0;
+                                return `${percentage}%`;
+                            }
+                            return `${currentValue}/${maxValue || 0}`;
+                        }
+                    }
+                }
+            }
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shade: 'dark',
+                type: 'horizontal',
+                gradientToColors: defaultOptions.gradientColors,
+                stops: [0, 100]
+            }
+        },
+        colors: defaultOptions.colors
+    };
+
+    const chart = new ApexCharts(document.querySelector(elementId), chartOptions);
+    chart.render();
+    
+    return {
+        updateProgress: (value, max) => {
+            currentValue = value;
+            maxValue = max;
+            const percentage = max > 0 ? (value / max) * 100 : 0;
+            chart.updateSeries([percentage]);
+        }
+    };
+}
+
+function copyLogToClipboard() {
+    const logContent = document.getElementById('terminal-output').textContent;
+    navigator.clipboard.writeText(logContent)
+        .then(() => alert('Log copied to clipboard!'));
+}
+
+function initializeThemeSwitcher() {
+    const themeInputs = document.querySelectorAll('input[name="theme-options"]');
+    
+    themeInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.checked) {
+                const selectedTheme = this.dataset.theme;
+                document.documentElement.setAttribute('data-bs-theme', selectedTheme);
+                localStorage.setItem('selectedTheme', selectedTheme);
+            }
+        });
+    });
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('selectedTheme') || 'blue-theme';
+    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    
+    // Check the corresponding radio button
+    const savedThemeInput = document.querySelector(`input[data-theme="${savedTheme}"]`);
+    if (savedThemeInput) {
+        savedThemeInput.checked = true;
+    }
+}
+
+function initializeLoggingDrawer(){
+    const handle = document.getElementById('logDrawerHandle');
+    const drawer = document.getElementById('logDrawer');
+    
+    handle.addEventListener('click', () => {
+        drawer.classList.toggle('expanded');
+    });
 }

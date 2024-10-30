@@ -6,12 +6,7 @@ $(function () {
 
   /* scrollar */
 
-  new PerfectScrollbar(".notify-list")
-
-  new PerfectScrollbar(".search-content")
-
-  // new PerfectScrollbar(".mega-menu-widgets")
-
+  new PerfectScrollbar("#terminal-output")
 
 
   /* toggle button */
@@ -24,9 +19,6 @@ $(function () {
     }))
   })
 
-
-
-
   /* menu */
 
   $(function () {
@@ -36,8 +28,6 @@ $(function () {
   $(".sidebar-close").on("click", function () {
     $("body").removeClass("toggled")
   })
-
-
 
   /* dark mode button */
 

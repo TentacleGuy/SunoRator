@@ -1,51 +1,102 @@
-
 {% block content %}
-<div class="uk-container">
-    <div class="uk-card uk-card-default uk-margin">
-        <div class="uk-card-header">
-            <h3>Current Song Info</h3>
-        </div>
-        <div class="uk-card-body">
-            <p><strong>Song URL:</strong> <span id="song-url"></span></p>
-            <p><strong>Playlist URL:</strong> <span id="playlist-url"></span></p>
-            <p><strong>Title:</strong> <span id="song-title"></span></p>
-            <p><strong>Styles:</strong> <span id="song-styles"></span></p>
-        </div>
-    </div>
-    
-    <div class="uk-card uk-card-default uk-card-body">
-        <!-- Status Indicators -->
-        <div class="uk-grid-small uk-child-width-1-4@m" uk-grid>
-            <div><div class="uk-card uk-card-secondary uk-card-small uk-card-body" id="meta-status">All Meta</div></div>
-            <div><div class="uk-card uk-card-secondary uk-card-small uk-card-body" id="styles-status">All Styles</div></div>
-            <div><div class="uk-card uk-card-secondary uk-card-small uk-card-body" id="meta-mapping-status">Meta Mapping</div></div>
-            <div><div class="uk-card uk-card-secondary uk-card-small uk-card-body" id="styles-mapping-status">Styles Mapping</div></div>
+<div class="container">
+    <div class="row mb-4">
+        <!-- Song Info Card - 9 columns wide -->
+        <div class="col-md-9">
+            <div class="card rounded-4 h-100">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Current Song Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Song URL:</strong> <span id="song-url"></span></p>
+                    <p><strong>Playlist URL:</strong> <span id="playlist-url"></span></p>
+                    <p><strong>Title:</strong> <span id="song-title"></span></p>
+                    <p><strong>Styles:</strong> <span id="song-styles"></span></p>
+                </div>
+            </div>
         </div>
 
-    <!-- Progress Section -->
-    <div class="uk-margin">
-        <div class="uk-margin">
-            <label class="uk-form-label" for="overall-progress">Gesamtfortschritt 0 / 0</label>
-            <progress class="uk-progress" id="overall-progress" value="0" max="100"></progress>
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label" for="playlist-progress">Playlists 0 / 0</label>
-            <progress class="uk-progress" id="playlist-progress" value="0" max="100"></progress>
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label" for="song-progress">Songs in Playlist 0 / 0</label>
-            <progress class="uk-progress" id="song-progress" value="0" max="100"></progress>
+        <!-- Status Indicators Card - 3 columns wide -->
+        <div class="col-md-3">
+            <div class="card rounded-4 h-100">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">File Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="bg-secondary p-2 text-white rounded" id="meta-status">All Meta</div>
+                        <div class="bg-secondary p-2 text-white rounded" id="styles-status">All Styles</div>
+                        <div class="bg-secondary p-2 text-white rounded" id="meta-mapping-status">Meta Mapping</div>
+                        <div class="bg-secondary p-2 text-white rounded" id="styles-mapping-status">Styles Mapping</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-
-        <!-- Control Buttons -->
-        <div class="uk-margin">
-            <button class="uk-button uk-button-primary" id="scrape-playlists">URLs Scrapen</button>
-            <button class="uk-button uk-button-secondary" id="scrape-songs">Songs Scrapen</button>
-            <progress class="uk-progress" id="scraping-progress" value="0" max="100"></progress>
+    <!-- Progress Charts Row -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Songs Total</h5>
+                </div>
+                <div class="card-body">
+                    <div id="overall-progress" 
+                        data-chart="overallChart"
+                        data-height="280"
+                        data-colors='["#ee0979"]'
+                        data-gradient-colors='["#ffd200"]'
+                        data-label-format="{value}/{max}"
+                        data-display-type="numbers">
+                    </div>
+                </div>
+            </div>
         </div>
-       
+
+        <div class="col-md-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Playlists</h5>
+                </div>
+                <div class="card-body">
+                    <div id="playlist-progress"
+                         data-chart="playlistChart"
+                         data-height="280"
+                         data-colors='["#02c27a"]'
+                         data-gradient-colors='["#0866ff"]'
+                         data-label-format="{value}/{max}"
+                         data-display-type="numbers">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card rounded-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Songs of Playlist</h5>
+                </div>
+                <div class="card-body">
+                    <div id="song-progress"
+                         data-chart="songChart"
+                         data-height="280"
+                         data-colors='["#7928ca"]'
+                         data-gradient-colors='["#ff0080"]'
+                         data-label-format="{value}/{max}"
+                         data-display-type="numbers">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <button class="btn btn-primary me-2" id="scrape-playlists">Get URLs</button>
+            <button class="btn btn-secondary" id="scrape-songs">Get Songdata</button>
+        </div>
     </div>
 </div>
 {% endblock %}

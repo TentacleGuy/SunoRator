@@ -1,0 +1,16 @@
+{
+    "model": {
+        "name": "gpt2",
+        "epochs": 3,
+        "learning_rate": 5e-05,
+        "batch_size": 4
+    },
+    "paths": {
+        "songs_dir": "songs",
+        "meta_dir": "song_meta"
+    },
+    "scraper": {
+        "delay": 5,
+        "headless": true
+    }
+}

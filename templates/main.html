@@ -32,6 +32,7 @@
     <link href="{{ url_for('static', filename='dist/css/semi-dark.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='dist/css/bordered-theme.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='dist/css/responsive.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='dist/css/style.min.css') }}" rel="stylesheet">
 
 </head>
 
@@ -55,77 +56,27 @@
     <!--end overlay-->
 
     <!--start footer-->
-    <footer class="page-footer">
-        <div id="debug-footer">
+    <footer class="footer-drawer">
             {% include 'layout/footer.html' %}
-        </div>
     </footer>
     <!--end footer-->
+  
+  <!-- Task Manager Button -->
+  <button class="task-manager-btn btn btn-grd btn-grd-primary position-fixed top-0 end-0 m-3 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#thread-modal">
+    <i class="bi bi-list-task"></i>
+    <span class="task-count" id="thread-count">0</span>
+  </button>
+  {% include 'modules/taskmanager.html' %}
 
-
-
-
-  <!--start switcher-->
+  <!--customizer-->
   <button class="btn btn-grd btn-grd-primary position-fixed bottom-0 end-0 m-3 d-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#staticBackdrop">
-    <i class="material-icons-outlined">tune</i>Customize
+    <i class="bi bi-brush-fill"></i>
   </button>
   
-  <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="staticBackdrop">
-    <div class="offcanvas-header border-bottom h-70">
-      <div class="">
-        <h5 class="mb-0">Theme Customizer</h5>
-        <p class="mb-0">Customize your theme</p>
-      </div>
-      <a href="javascript:;" class="primaery-menu-close" data-bs-dismiss="offcanvas">
-        <i class="material-icons-outlined">close</i>
-      </a>
-    </div>
-    <div class="offcanvas-body">
-      <div>
-        <p>Theme variation</p>
+  {% include 'modules/customizer.html' %}
 
-        <div class="row g-3">
-          <div class="col-12 col-xl-6">
-            <input type="radio" class="btn-check" name="theme-options" id="BlueTheme" checked>
-            <label class="btn btn-outline-secondary d-flex flex-column gap-1 align-items-center justify-content-center p-4" for="BlueTheme">
-              <span class="material-icons-outlined">contactless</span>
-              <span>Blue</span>
-            </label>
-          </div>
-          <div class="col-12 col-xl-6">
-            <input type="radio" class="btn-check" name="theme-options" id="LightTheme">
-            <label class="btn btn-outline-secondary d-flex flex-column gap-1 align-items-center justify-content-center p-4" for="LightTheme">
-              <span class="material-icons-outlined">light_mode</span>
-              <span>Light</span>
-            </label>
-          </div>
-          <div class="col-12 col-xl-6">
-            <input type="radio" class="btn-check" name="theme-options" id="DarkTheme">
-            <label class="btn btn-outline-secondary d-flex flex-column gap-1 align-items-center justify-content-center p-4" for="DarkTheme">
-              <span class="material-icons-outlined">dark_mode</span>
-              <span>Dark</span>
-            </label>
-          </div>
-          <div class="col-12 col-xl-6">
-            <input type="radio" class="btn-check" name="theme-options" id="SemiDarkTheme">
-            <label class="btn btn-outline-secondary d-flex flex-column gap-1 align-items-center justify-content-center p-4" for="SemiDarkTheme">
-              <span class="material-icons-outlined">contrast</span>
-              <span>Semi Dark</span>
-            </label>
-          </div>
-          <div class="col-12 col-xl-6">
-            <input type="radio" class="btn-check" name="theme-options" id="BoderedTheme">
-            <label class="btn btn-outline-secondary d-flex flex-column gap-1 align-items-center justify-content-center p-4" for="BoderedTheme">
-              <span class="material-icons-outlined">border_style</span>
-              <span>Bordered</span>
-            </label>
-          </div>
-        </div><!--end row-->
 
-      </div>
-    </div>
-  </div>
-  <!--start switcher-->
+
 
 
  <!-- Bootstrap JS -->
@@ -145,7 +96,5 @@
 
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='dist/js/main.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='dist/js/dashboard1.min.js') }}"></script>
-
 </body>
 </html>

@@ -25,12 +25,7 @@ class WebScraper:
         socketio.emit('progress_update', {
             'type': progress_type,
             'value': value,
-            'max': max_value,
-            'label': {
-                'overall': f'Gesamtfortschritt {value} / {max_value}',
-                'playlist': f'Playlists {value} / {max_value}',
-                'song': f'Songs in Playlist {value} / {max_value}'
-            }[progress_type]
+            'max': max_value
         })
 
     def emit_song_info(self, song_data, playlist_url):
