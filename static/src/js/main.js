@@ -3,13 +3,7 @@
 $(function () {
   "use strict";
 
-
-  /* scrollar */
-
-  new PerfectScrollbar("#terminal-output")
-
-
-  /* toggle button */
+ /* toggle button */
 
   $(".btn-toggle").click(function () {
     $("body").hasClass("toggled") ? ($("body").removeClass("toggled"), $(".sidebar-wrapper").unbind("hover")) : ($("body").addClass("toggled"), $(".sidebar-wrapper").hover(function () {

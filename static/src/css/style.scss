@@ -4,50 +4,34 @@ html {
 
     }
 }
-.footer-drawer {
-    position: fixed;
+.log-drawer {
+    position: absolute;
     bottom: 0;
-    left: 270px;
-    width: calc(100% - 270px);
-    z-index: 9999;
-    //background: #fff;
-    height: 240px; // 200px content + 40px handle
-    
-    .drawer-handle {
-        position: absolute;
-        top: 0;
-        width: 100%;
-        z-index: 10000;
-        height: 40px;
-    }
+    left:0;
+    right:0;
+    z-index: 5;
+    height: 240px; 
+    transition: height 0.3s ease;
     
     #terminal-output {
         height: 200px;
-        margin-top: 40px;
         overflow-y: auto;
     }
-    
-    #logDrawer{
-        display:relative!important;
-    }
-    #logDrawer.show {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        height: calc(100vh - 100px);
-        
-        #terminal-output {
-            height: calc(100vh - 140px);
-        }
-    }
-}
 
-
-.log-drawer {
-    height: 200px;
-    transition: height 0.3s ease;
-    
     &.expanded {
         height: calc(100vh - 100px);
+        .drawer-content{
+            height:100%;
+        }
+
+        #terminal-output {
+            height: calc(100% - 35px);
+            overflow-y: auto;
+        }
     }
+
+}
+
+body.toggled:not(body.toggled.sidebar-hovered) .logo-img {
+    width: 40px;
 }

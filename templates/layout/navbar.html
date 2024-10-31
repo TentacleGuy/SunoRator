@@ -1,28 +1,25 @@
-<aside class="sidebar-wrapper" data-simplebar="true">
-    <div class="sidebar-header">
-        <div class="logo-icon">
-            <img src="{{ url_for('static', filename='images/logo-icon.png') }}" class="logo-img" alt="">
-        </div>
-        <div class="logo-name flex-grow-1">
-            <h5 class="mb-0">Suno Kit</h5>
-        </div>
-        <div class="sidebar-close">
-            <span class="material-icons-outlined">close</span>
-        </div>
-    </div>
-    <div class="sidebar-nav">
-        <ul class="metismenu" id="sidenav">
-            {% for page in pages %}
-            <li class="{% if current_page == page.url %}mm-active{% endif %}">
-                <a href="{{ url_for(page.url) }}" data-ajax="true">
-                    <div class="parent-icon">
-                        <i class="material-icons-outlined">{{ page.icon|default('article') }}</i>
-                    </div>
-                    <div class="menu-title">{{ page.name }}</div>
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-</aside>
-
+<header class="top-header">
+    <nav class="navbar navbar-expand align-items-center gap-4">
+      <div class="btn-toggle">
+        <a href="javascript:;"><i class="material-icons-outlined">menu</i></a>
+      </div>
+  
+      <ul class="navbar-nav gap-1 nav-right-links align-items-center ms-auto">
+        <!-- Task Manager Button -->
+        <li class="nav-item">
+          <a class="nav-link position-relative" data-bs-toggle="modal" href="#thread-modal">
+            <i class="material-icons-outlined">list_alt</i>
+            <span class="badge rounded-pill bg-danger" id="thread-count">0</span>
+          </a>
+        </li>
+  
+        <!-- Customizer Button -->
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="offcanvas" href="#staticBackdrop">
+            <i class="material-icons-outlined">brush</i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </header>
+  

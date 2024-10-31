@@ -5,6 +5,44 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeNavigation();
     loadPageSpecificFunctions();
     initializeLoggingDrawer()
+
+    
+Pace.options = {
+    startOnPageLoad: true,
+    restartOnRequestAfter: false,
+    ajax: false
+};
+
+Pace.on('start', () => {
+    console.log('Pace: Starting...');
+});
+
+Pace.on('progress', (progress) => {
+    console.log('Pace: Progress:', progress);
+});
+
+Pace.on('hide', () => {
+    console.log('Pace: Hide event triggered');
+});
+
+Pace.on('done', () => {
+    console.log('Pace: Done event triggered');
+});
+
+Pace.on('stop', () => {
+    console.log('Pace: Stop event triggered');
+});
+
+// Track AJAX requests
+Pace.track(function() {
+    console.log('Pace: Tracking new request');
+});
+
+
+Pace.on('done', function() {
+    document.body.classList.remove('pace-running');
+    document.body.classList.add('pace-done');
+});
 });
 
 // Socket.IO initialization
@@ -491,3 +529,4 @@ function initializeLoggingDrawer(){
         drawer.classList.toggle('expanded');
     });
 }
+

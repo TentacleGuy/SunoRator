@@ -457,21 +457,20 @@ $dropdownAnimation: .6s cubic-bezier(.25, .8, .25, 1) 0s normal forwards 1 animd
   .sidebar-header {
     display: flex;
     align-items: center;
-    justify-content: start;
+    justify-content: center;
     width: 260px;
-    height: 70px;
     padding: 0 1rem;
     gap: .5rem;
     z-index: 1;
     // border-bottom: 1px solid var(--bs-border-color);
-    position: fixed;
-    top: 0;
+    margin-top:20px;
     background-color: #fff;
     transition: ease-out .3s;
     border-right: 1px solid var(--bs-border-color);
 
     .logo-img {
-      width: 45px;
+      width: 150px;
+      transition: .3s;
     }
 
     .logo-name {
@@ -498,9 +497,8 @@ $dropdownAnimation: .6s cubic-bezier(.25, .8, .25, 1) 0s normal forwards 1 animd
   $menu_lable_color: #b0afaf;
   $menu_bg_color: rgb(0 140 255 / 5%);
   $border-color_1: initial;
-
   .sidebar-nav {
-    margin-top: 70px;
+    margin-top: 40px;
     height: 100%;
     background-color: #ffffff;
 
@@ -786,7 +784,6 @@ $dropdownAnimation: .6s cubic-bezier(.25, .8, .25, 1) 0s normal forwards 1 animd
   }
 }
 
-
 /* main content */
 
 .main-wrapper {
@@ -794,6 +791,8 @@ $dropdownAnimation: .6s cubic-bezier(.25, .8, .25, 1) 0s normal forwards 1 animd
   padding-bottom: 20px;
   margin-left: 260px;
   transition: ease-out .3s;
+  position: relative;
+  height: calc(100vh - 100px);
 
   .main-content {
     padding: 1.5rem;
