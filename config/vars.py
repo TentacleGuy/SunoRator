@@ -42,3 +42,16 @@ DEFAULT_LOGGING_STEPS = 100
 DEFAULT_SAVE_STEPS = 500
 DEFAULT_EVAL_STEPS = 500
 
+####Seiten###
+# Manuelle Liste der Seiten (Name, Icon)
+pages = [
+    {"name": "home", "icon": "home"},
+    {"name": "scrape", "icon": "download"},
+    {"name": "prepare", "icon": "settings_suggest"},
+    {"name": "train", "icon": "school"},
+    {"name": "generate", "icon": "auto_awesome"},
+    {"name": "settings", "icon": "settings"}
+]
+
+
+

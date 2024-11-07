@@ -84,6 +84,44 @@ def get_processed_song_ids():
             song_ids.add(song_id)
     return song_ids
 
+#################Songscraper#########################
+def get_playlist_data():
+    """Centralized function to load playlist data"""
+    data = load_json(SCRAPED_PLAYLISTS_FILE)
+    # Initialize default structure if empty or invalid
+    if not isinstance(data, dict) or not all(key in data for key in ['auto_playlists', 'manual_playlists', 'manual_songs']):
+        data = {
+            "auto_playlists": {},
+            "manual_playlists": {},
+            "manual_songs": {}
+        }
+        save_playlist_data(data)
+    return data
+
+def save_playlist_data(data):
+    """Centralized function to save playlist data"""
+    save_json(data, SCRAPED_PLAYLISTS_FILE)
+
+def add_url_to_collection(url, collection_type):
+    """Generic function to add URLs to any collection"""
+    data = get_playlist_data()
+    if collection_type not in data:
+        data[collection_type] = {}
+
+    if url not in data[collection_type]:
+        if collection_type.endswith('playlists'):
+            data[collection_type][url] = {
+                "song_urls": [],
+                "processed": False
+            }
+        else:  # for manual songs
+            data[collection_type][url] = {
+                "processed": False
+            }
+        save_playlist_data(data)
+        return True
+    return False
+
 ################Trainingdata#########################
 
 def clean_song_data(song_data):

@@ -10,12 +10,12 @@
     <div class="sidebar-nav">
         <ul class="metismenu" id="sidenav">
             {% for page in pages %}
-            <li class="{% if current_page == page.url %}mm-active{% endif %}">
-                <a href="{{ url_for(page.url) }}" data-ajax="true">
+            <li class="{% if current_page == page.name %}mm-active{% endif %}">
+                <a href="{{ url_for(page.name) }}" data-ajax="true">
                     <div class="parent-icon">
                         <i class="material-icons-outlined">{{ page.icon|default('article') }}</i>
                     </div>
-                    <div class="menu-title">{{ page.name }}</div>
+                    <div class="menu-title">{{ page.name|title }}</div>
                 </a>
             </li>
             {% endfor %}

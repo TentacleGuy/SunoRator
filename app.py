@@ -19,16 +19,6 @@ def handle_connect():
     
     thread_manager.start_thread('log_emitter', emit_logs)
 
-# Manuelle Liste der Seiten (URL, Name)
-pages = [
-    {"url": "home", "name": "Home"},
-    {"url": "scrape", "name": "Scrape"},
-    {"url": "prepare", "name": "Prepare"},
-    {"url": "train", "name": "Train"},
-    {"url": "generate", "name": "Generate"},
-    {"url": "settings", "name": "Settings"}
-]
-
 ##########################THREADS##########################
 @app.route('/api/threads')
 def get_active_threads():
@@ -87,6 +77,41 @@ def api_scrape_songs():
         scraper.WebScraper(thread_manager.log_queue).scrape_songs
     )
     return jsonify({"status": "started" if success else "already running"})
+
+@app.route('/api/playlists/manual', methods=['POST'])
+def add_manual_playlist():
+    data = request.json
+    playlist_url = data['url']
+    # Create scraper instance with log queue
+    scraper_instance = scraper.WebScraper(thread_manager.log_queue)
+    success = scraper_instance.add_manual_playlist(playlist_url)
+    return jsonify({"success": success})
+
+@app.route('/api/playlists/all')
+def get_all_playlists():
+    """Return all playlist data including auto, manual playlists and manual songs"""
+    playlists = get_playlist_data()
+    return jsonify(playlists)
+
+@app.route('/api/songs/manual', methods=['POST'])
+def add_manual_song():
+    data = request.json
+    song_url = data['url']
+    # Create scraper instance with log queue
+    scraper_instance = scraper.WebScraper(thread_manager.log_queue)
+    success = scraper_instance.add_manual_song(song_url)
+    return jsonify({"success": success})
+
+
+
+@app.route('/api/scrape/manual-playlists', methods=['POST'])
+def scrape_manual_playlists():
+    success = thread_manager.start_thread(
+        'manual_playlist_scraping',
+        scraper.WebScraper(thread_manager.log_queue).scrape_manual_playlists
+    )
+    return jsonify({"status": "started" if success else "already running"})
+
 
 
 ##########################PREPARE##########################

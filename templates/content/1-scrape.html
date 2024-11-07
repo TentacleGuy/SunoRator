@@ -34,6 +34,45 @@
         </div>
     </div>
 
+    <!-- Song / Playlist Management -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card rounded-4 h-100">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">Auto-Scraped Playlists</h5>
+                </div>
+                <div class="card-body">
+                    <div id="auto-playlists-list" class="list-group"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card rounded-4 h-100">
+                <div class="card-header py-3 d-flex justify-content-between">
+                    <h5 class="mb-0">Manual Playlists</h5>
+                    <button class="btn btn-sm btn-primary" id="add-playlist">Add Playlist</button>
+                </div>
+                <div class="card-body">
+                    <div id="manual-playlists-list" class="list-group"></div>
+                    <button class="btn btn-secondary mt-2" id="scrape-manual-playlists">Scrape Manual Playlists</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card rounded-4 h-100">
+                <div class="card-header py-3 d-flex justify-content-between">
+                    <h5 class="mb-0">Manual Songs</h5>
+                    <button class="btn btn-sm btn-primary" id="add-song">Add Song</button>
+                </div>
+                <div class="card-body">
+                    <div id="manual-songs-list" class="list-group"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Progress Charts Row -->
     <div class="row">
         <div class="col-md-4">

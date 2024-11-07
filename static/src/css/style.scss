@@ -4,14 +4,30 @@ html {
 
     }
 }
+
+body{
+    &.toggled{
+        &:not(.sidebar-hovered) .log-drawer{
+            left:69px;
+        }
+    }
+}
+#logDrawerSpacer{
+    &.minimized{
+        min-height:48px;
+    }
+    &.normal{
+        min-height:240px;
+    }
+}
 .log-drawer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
-    left:0;
+    left:259px;
     right:0;
     z-index: 5;
     height: 240px; 
-    transition: height 0.3s ease;
+    transition: 0.3s ease;
     
     #terminal-output {
         height: 200px;
@@ -27,6 +43,12 @@ html {
         #terminal-output {
             height: calc(100% - 35px);
             overflow-y: auto;
+        }
+    }
+    &.minimized{
+        height: 63px;
+        #terminal-output {
+            height:0;
         }
     }
 

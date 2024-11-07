@@ -8,3 +8,7 @@ song_meta/
 songs/
 
 static/dist/
+
+venv/
+
+.idea/

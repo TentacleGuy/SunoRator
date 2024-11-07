@@ -13,32 +13,6 @@ Pace.options = {
     ajax: false
 };
 
-Pace.on('start', () => {
-    console.log('Pace: Starting...');
-});
-
-Pace.on('progress', (progress) => {
-    console.log('Pace: Progress:', progress);
-});
-
-Pace.on('hide', () => {
-    console.log('Pace: Hide event triggered');
-});
-
-Pace.on('done', () => {
-    console.log('Pace: Done event triggered');
-});
-
-Pace.on('stop', () => {
-    console.log('Pace: Stop event triggered');
-});
-
-// Track AJAX requests
-Pace.track(function() {
-    console.log('Pace: Tracking new request');
-});
-
-
 Pace.on('done', function() {
     document.body.classList.remove('pace-running');
     document.body.classList.add('pace-done');
@@ -68,20 +42,10 @@ function initializeSocketIO() {
             label.textContent = data.label;
         }
     });
-      
 
-    /*socket.on('progress_update', function(data) {
-        //console.log('Progress update received:', data); // Debug log
-        const progressBar = document.getElementById(data.type + '-progress');
-        const label = document.querySelector(`label[for="${data.type}-progress"]`);
-        if (progressBar) {
-            progressBar.value = data.value;
-            progressBar.max = data.max;
-        }
-        if (label) {
-            label.textContent = data.label;
-        }
-    });*/
+    socket.on('playlists_updated', function() {
+        updateLists();
+    });
 
     socket.on('song_info_update', function(data) {
         document.getElementById('song-url').textContent = data.song_url;
@@ -91,8 +55,7 @@ function initializeSocketIO() {
     });
 
     socket.on('file_updates', function(data) {
-        //console.log('File updates received:', data);
-        
+
         const statusElements = {
             'all_meta_tags.json': 'meta-status',
             'all_styles.json': 'styles-status',
@@ -249,6 +212,9 @@ function initializeDonutCharts(chartIds) {
 function initScraperControls() {
     const playlistsBtn = document.getElementById('scrape-playlists');
     const songsBtn = document.getElementById('scrape-songs');
+    const manualPlaylistBtn = document.getElementById('add-playlist');
+    const manualSongBtn = document.getElementById('add-song');
+    const scrapeManualPlaylistsBtn = document.getElementById('scrape-manual-playlists');
     const charts = ['overall', 'playlist', 'song'];
    
     initializeDonutCharts(charts);
@@ -282,6 +248,60 @@ function initScraperControls() {
                 .then(data => console.log('Started song scraping:', data));
         });
     }
+
+    if (manualPlaylistBtn) {
+        manualPlaylistBtn.addEventListener('click', function() {
+            const url = prompt('Enter playlist URL:');
+            if (url) {
+                fetch('/api/playlists/manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) updateLists();
+                });
+            }
+        });
+    }
+
+    if (manualSongBtn) {
+        manualSongBtn.addEventListener('click', function() {
+            const url = prompt('Enter song URL:');
+            if (url) {
+                fetch('/api/songs/manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) updateLists();
+                });
+            }
+        });
+    }
+
+    if (scrapeManualPlaylistsBtn) {
+        scrapeManualPlaylistsBtn.addEventListener('click', function() {
+            fetch('/api/scrape/manual-playlists', { method: 'POST' })
+                .then(response => response.text())
+                .then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return { message: text };
+                    }
+                })
+                .then(data => {
+                    console.log('Started manual playlist scraping:', data);
+                    updateLists();
+                });
+        });
+    }
+    // Initial load of lists
+    updateLists();
 }
 
 // Preparation Controls
@@ -523,10 +543,55 @@ function initializeThemeSwitcher() {
 
 function initializeLoggingDrawer(){
     const handle = document.getElementById('logDrawerHandle');
+    const minHandle = document.getElementById('logDrawerMinHandle');
+    const maxHandle = document.getElementById('logDrawerMaxHandle');
     const drawer = document.getElementById('logDrawer');
+    const spacer = document.getElementById('logDrawerSpacer');
     
     handle.addEventListener('click', () => {
-        drawer.classList.toggle('expanded');
+        drawer.classList.remove('expanded');
+        drawer.classList.remove('minimized');
+        spacer.classList.add('normal');
+        spacer.classList.remove('minimized');
+    });
+    minHandle.addEventListener('click', () => {
+        drawer.classList.add('minimized');
+        drawer.classList.remove('expanded');
+        spacer.classList.remove('normal');
+        spacer.classList.add('minimized');
+    });
+    maxHandle.addEventListener('click', () => {
+        drawer.classList.add('expanded');
+        drawer.classList.remove('minimized');
     });
 }
 
+function updateLists() {
+    fetch('/api/playlists/all')
+        .then(response => response.json())
+        .then(data => {
+            updateListContent('auto-playlists-list', data.auto_playlists);
+            updateListContent('manual-playlists-list', data.manual_playlists);
+            updateListContent('manual-songs-list', data.manual_songs);
+        });
+}
+
+function updateListContent(elementId, data) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    container.innerHTML = Object.entries(data)
+        .map(([url, info]) => `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-truncate me-2">${url}</div>
+                    <div>
+                        ${info.song_urls ? `<small class="me-2">${info.song_urls.length} songs</small>` : ''}
+                        <span class="badge ${info.processed ? 'bg-success' : 'bg-warning'}">
+                            ${info.processed ? 'Processed' : 'Pending'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+}
