@@ -89,11 +89,12 @@ def get_playlist_data():
     """Centralized function to load playlist data"""
     data = load_json(SCRAPED_PLAYLISTS_FILE)
     # Initialize default structure if empty or invalid
-    if not isinstance(data, dict) or not all(key in data for key in ['auto_playlists', 'manual_playlists', 'manual_songs']):
+    if not isinstance(data, dict) or not all(key in data for key in ['playlists', 'artists', 'genres', 'songs']):
         data = {
-            "auto_playlists": {},
-            "manual_playlists": {},
-            "manual_songs": {}
+            "playlists": {},
+            "artists": {},
+            "genres": {},
+            "songs": {}
         }
         save_playlist_data(data)
     return data
@@ -102,22 +103,28 @@ def save_playlist_data(data):
     """Centralized function to save playlist data"""
     save_json(data, SCRAPED_PLAYLISTS_FILE)
 
-def add_url_to_collection(url, collection_type):
+
+def add_url_to_collection(url, url_type):
     """Generic function to add URLs to any collection"""
     data = get_playlist_data()
-    if collection_type not in data:
-        data[collection_type] = {}
+    type_mapping = {
+        'playlist': 'playlists',
+        'artist': 'artists',
+        'genre': 'genres',
+        'song': 'songs'
+    }
 
-    if url not in data[collection_type]:
-        if collection_type.endswith('playlists'):
-            data[collection_type][url] = {
-                "song_urls": [],
-                "processed": False
-            }
-        else:  # for manual songs
-            data[collection_type][url] = {
-                "processed": False
-            }
+    category = type_mapping.get(url_type)
+    if not category:
+        return False
+
+    if url not in data[category]:
+        data[category][url] = {
+            "type": url_type,
+            "title": "",
+            "enabled": True,
+            "song_urls": [] if url_type != 'song' else None
+        }
         save_playlist_data(data)
         return True
     return False

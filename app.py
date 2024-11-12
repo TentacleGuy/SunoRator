@@ -102,8 +102,6 @@ def add_manual_song():
     success = scraper_instance.add_manual_song(song_url)
     return jsonify({"success": success})
 
-
-
 @app.route('/api/scrape/manual-playlists', methods=['POST'])
 def scrape_manual_playlists():
     success = thread_manager.start_thread(
@@ -112,7 +110,33 @@ def scrape_manual_playlists():
     )
     return jsonify({"status": "started" if success else "already running"})
 
+@app.route('/api/scrape/manual', methods=['POST'])
+def api_scrape_manual():
+    success = thread_manager.start_thread(
+        'manual_scraping',
+        scraper.WebScraper(thread_manager.log_queue).scrape_manual_playlists
+    )
+    return jsonify({"status": "started" if success else "already running"})
 
+@app.route('/api/urls/all', methods=['GET'])
+def get_all_urls():
+    data = load_json(SCRAPED_PLAYLISTS_FILE)
+    if not isinstance(data, dict):
+        data = {
+            "playlists": {},
+            "artists": {},
+            "genres": {},
+            "songs": {}
+        }
+    return jsonify(data)
+
+@app.route('/api/urls/add', methods=['POST'])
+def add_url():
+    data = request.get_json()
+    url = data.get('url')
+    url_type = data.get('type')
+    success = add_url_to_collection(url, url_type)
+    return jsonify({'success': success})
 
 ##########################PREPARE##########################
 @app.route('/prepare')

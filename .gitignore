@@ -12,3 +12,5 @@ static/dist/
 venv/
 
 .idea/
+
+config/settings.json

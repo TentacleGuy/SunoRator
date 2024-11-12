@@ -210,98 +210,57 @@ function initializeDonutCharts(chartIds) {
 }
 // Scraper Controls
 function initScraperControls() {
-    const playlistsBtn = document.getElementById('scrape-playlists');
-    const songsBtn = document.getElementById('scrape-songs');
-    const manualPlaylistBtn = document.getElementById('add-playlist');
-    const manualSongBtn = document.getElementById('add-song');
-    const scrapeManualPlaylistsBtn = document.getElementById('scrape-manual-playlists');
+    const addUrlBtn = document.getElementById('add-url');
+    const urlInput = document.getElementById('url-input');
     const charts = ['overall', 'playlist', 'song'];
-   
+
     initializeDonutCharts(charts);
-    
-    if (playlistsBtn) {
-        playlistsBtn.addEventListener('click', function() {
-            fetch('/api/scrape/playlists', { method: 'POST' })
-                .then(response => response.text())  // Get text first
-                .then(text => {
-                    try {
-                        return JSON.parse(text);  // Try to parse as JSON
-                    } catch {
-                        return { message: text };  // If not JSON, wrap in object
-                    }
-                })
-                .then(data => console.log('Started playlist scraping:', data));
-        });
-    }
-    
-    if (songsBtn) {
-        songsBtn.addEventListener('click', function() {
-            fetch('/api/scrape/songs', { method: 'POST' })
-                .then(response => response.text())
-                .then(text => {
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        return { message: text };
-                    }
-                })
-                .then(data => console.log('Started song scraping:', data));
-        });
-    }
 
-    if (manualPlaylistBtn) {
-        manualPlaylistBtn.addEventListener('click', function() {
-            const url = prompt('Enter playlist URL:');
-            if (url) {
-                fetch('/api/playlists/manual', {
+    if (addUrlBtn) {
+        addUrlBtn.addEventListener('click', () => {
+            const url = urlInput.value;
+            const type = detectUrlType(url);
+            if (type) {
+                fetch('/api/urls/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({ url, type })
                 })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) updateLists();
+                .then(() => {
+                    updateUrlLists();
+                    urlInput.value = '';
                 });
             }
         });
     }
 
-    if (manualSongBtn) {
-        manualSongBtn.addEventListener('click', function() {
-            const url = prompt('Enter song URL:');
-            if (url) {
-                fetch('/api/songs/manual', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) updateLists();
-                });
-            }
-        });
-    }
+    const scrapeButtons = {
+        'scrape-playlists': '/api/scrape/playlists',
+        'scrape-manual-playlists': '/api/scrape/manual',
+        'scrape-songs': '/api/scrape/songs'
+    };
 
-    if (scrapeManualPlaylistsBtn) {
-        scrapeManualPlaylistsBtn.addEventListener('click', function() {
-            fetch('/api/scrape/manual-playlists', { method: 'POST' })
-                .then(response => response.text())
-                .then(text => {
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        return { message: text };
-                    }
-                })
-                .then(data => {
-                    console.log('Started manual playlist scraping:', data);
-                    updateLists();
-                });
-        });
-    }
+    Object.entries(scrapeButtons).forEach(([id, endpoint]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.addEventListener('click', () => {
+                fetch(endpoint, { method: 'POST' })
+                    .then(response => response.text())
+                    .then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch {
+                            return { message: text };
+                        }
+                    })
+                    .then(data => console.log(`Started ${id}:`, data));
+            });
+        }
+    });
+
     // Initial load of lists
-    updateLists();
+    updateUrlLists();
 }
 
 // Preparation Controls
@@ -576,22 +535,119 @@ function updateLists() {
         });
 }
 
-function updateListContent(elementId, data) {
+function updateListContent(elementId, items) {
     const container = document.getElementById(elementId);
     if (!container) return;
 
-    container.innerHTML = Object.entries(data)
-        .map(([url, info]) => `
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-truncate me-2">${url}</div>
-                    <div>
-                        ${info.song_urls ? `<small class="me-2">${info.song_urls.length} songs</small>` : ''}
-                        <span class="badge ${info.processed ? 'bg-success' : 'bg-warning'}">
-                            ${info.processed ? 'Processed' : 'Pending'}
-                        </span>
+    container.innerHTML = items.map(item => `
+        <div class="list-item" data-url="${item.url}">
+            <div class="item-header">
+                <span class="toggle-children">▶</span>
+                <span class="item-title">${item.title || item.url}</span>
+                <div class="item-controls">
+                    ${item.type !== 'song' ? '<i class="fas fa-sync reload-url"></i>' : ''}
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" ${item.enabled ? 'checked' : ''}>
                     </div>
+                    <i class="fas fa-trash delete-url"></i>
                 </div>
             </div>
-        `).join('');
+            ${item.songs ? `<div class="item-children hidden">
+                ${item.songs.map(song => `
+                    <div class="song-item">
+                        <span class="song-title">${song.title || song.url}</span>
+                    </div>
+                `).join('')}
+            </div>` : ''}
+        </div>
+    `).join('');
+
+    // Add event listeners
+    addListItemEventListeners(container);
+}
+
+function detectUrlType(url) {
+    if (url.includes('/playlist/')) return 'playlist';
+    if (url.includes('/song/')) return 'song';
+    if (url.includes('/@')) return 'artist';
+    if (url.includes('/style/')) return 'genre';
+    return null;
+}
+
+function addUrl() {
+    const url = document.getElementById('url-input').value;
+    const type = detectUrlType(url);
+    if (!type) {
+        UIkit.notification('Invalid URL format', {status: 'danger'});
+        return;
+    }
+
+    fetch('/api/urls/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, type })
+    }).then(response => response.json())
+    .then(data => updateUrlLists());
+}
+
+function updateUrlLists() {
+    fetch('/api/urls/all')
+        .then(response => response.json())
+        .then(data => {
+            // Update each accordion section
+            updateListContent('playlists-list', data.playlists);
+            updateListContent('songs-list', data.songs);
+            updateListContent('artists-list', data.artists);
+            updateListContent('genres-list', data.genres);
+        });
+}
+
+function addListItemEventListeners(container) {
+    container.querySelectorAll('.toggle-children').forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            const itemChildren = e.target.closest('.list-item').querySelector('.item-children');
+            if (itemChildren) {
+                itemChildren.classList.toggle('hidden');
+                e.target.textContent = itemChildren.classList.contains('hidden') ? '▶' : '▼';
+            }
+        });
+    });
+
+    container.querySelectorAll('.reload-url').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const url = e.target.closest('.list-item').dataset.url;
+            fetch('/api/urls/reload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            }).then(() => updateUrlLists());
+        });
+    });
+
+    container.querySelectorAll('.delete-url').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const url = e.target.closest('.list-item').dataset.url;
+            if (confirm('Are you sure you want to delete this item?')) {
+                fetch('/api/urls/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                }).then(() => updateUrlLists());
+            }
+        });
+    });
+
+    container.querySelectorAll('.form-check-input').forEach(toggle => {
+        toggle.addEventListener('change', (e) => {
+            const url = e.target.closest('.list-item').dataset.url;
+            fetch('/api/urls/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url,
+                    enabled: e.target.checked
+                })
+            });
+        });
+    });
 }

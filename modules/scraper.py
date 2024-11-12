@@ -39,7 +39,7 @@ class WebScraper:
     def init_driver(self):
         self.emit_log("Initialisiere Webdriver...")
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        #chrome_options.add_argument("--headless")
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         self.emit_log("Webdriver initialisiert.")
@@ -106,23 +106,30 @@ class WebScraper:
         return add_url_to_collection(playlist_url, "manual_playlists")
 
     def add_manual_song(self, song_url):
-        return add_url_to_collection(song_url, "manual_songs")
+        return add_url_to_collection(song_url, "single_songs")
 
     def scrape_manual_playlists(self, stop_event, log_queue, pause_event):
         playlists = get_playlist_data()
-        unprocessed_playlists = [url for url, data in playlists['manual_playlists'].items()
-                                 if not data['processed']]
-        self.scrape_playlist_urls(unprocessed_playlists, "manual_playlists", stop_event, pause_event)
+        collection_types = ['playlists', 'artists', 'genres']
 
-    def scrape_playlist_urls(self, urls, playlist_type, stop_event, pause_event):
+        for collection_type in collection_types:
+            unprocessed_items = [
+                url for url, data in playlists[collection_type].items()
+                if not data.get('processed')
+            ]
+            if unprocessed_items:
+                self.emit_log(f"Processing {collection_type}...")
+                self.scrape_playlist_urls(unprocessed_items, collection_type, stop_event, pause_event)
+
+    def scrape_playlist_urls(self, urls, collection_type, stop_event, pause_event):
         self.init_driver()
         playlists = get_playlist_data()
         total_urls = len(urls)
 
         try:
-            for i, playlist_url in enumerate(urls):
+            for i, url in enumerate(urls):
                 if stop_event.is_set():
-                    self.emit_log("Stopping playlist scraping...")
+                    self.emit_log("Stopping URL scraping...")
                     break
 
                 while pause_event.is_set():
@@ -130,31 +137,34 @@ class WebScraper:
                     if stop_event.is_set():
                         break
 
-                self.emit_log(f"Processing playlist {i + 1}/{total_urls}: {playlist_url}")
+                self.emit_log(f"Processing {collection_type} URL {i + 1}/{total_urls}: {url}")
 
                 try:
-                    self.driver.get(playlist_url)
+                    self.driver.get(url)
                     time.sleep(5)
 
                     song_links = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
                     song_urls = list(set([link.get_attribute("href") for link in song_links]))
 
-                    # Initialize playlist entry if it doesn't exist
-                    if playlist_url not in playlists[playlist_type]:
-                        playlists[playlist_type][playlist_url] = {
+                    # Log each found song URL
+                    for song_url in song_urls:
+                        self.emit_log(f"Found song URL: {song_url}")
+
+                    if url not in playlists[collection_type]:
+                        playlists[collection_type][url] = {
                             "song_urls": [],
                             "processed": False
                         }
 
-                    playlists[playlist_type][playlist_url]["song_urls"] = song_urls
-                    playlists[playlist_type][playlist_url]["processed"] = True
+                    playlists[collection_type][url]["song_urls"] = song_urls
+                    playlists[collection_type][url]["processed"] = True
 
                     save_playlist_data(playlists)
-                    self.emit_log(f"Successfully scraped playlist: {playlist_url} with {len(song_urls)} songs")
+                    self.emit_log(f"Successfully scraped {collection_type}: {url} with {len(song_urls)} songs")
                     self.emit_progress('playlist', i + 1, total_urls)
 
                 except Exception as e:
-                    self.emit_log(f"Error processing playlist {playlist_url}: {str(e)}")
+                    self.emit_log(f"Error processing {collection_type} {url}: {str(e)}")
                     continue
 
             socketio.emit('thread_status_changed')
@@ -171,25 +181,27 @@ class WebScraper:
             processed_song_ids = get_processed_song_ids()
             playlists = get_playlist_data()
 
-            # First process manual songs (without playlist)
-            manual_songs = [(url, None) for url in playlists['manual_songs'].keys()]
+            # Process individual songs
+            single_songs = [(url, None) for url in playlists['songs'].keys()]
 
-            # Then process playlist songs
-            playlist_songs = []
-            for playlist_type in ['auto_playlists', 'manual_playlists']:
-                for playlist_url, playlist_data in playlists[playlist_type].items():
-                    playlist_songs.extend([(song_url, playlist_url) for song_url in playlist_data['song_urls']])
+            # Process songs from all other collections
+            collection_songs = []
+            for collection_type in ['playlists', 'artists', 'genres']:
+                for url, data in playlists[collection_type].items():
+                    if data.get('song_urls'):
+                        collection_songs.extend([(song_url, url) for song_url in data['song_urls']])
 
             # Update overall progress
-            total_songs = len(manual_songs) + len(playlist_songs)
-            self.emit_log(f"Found {len(manual_songs)} manual songs and {len(playlist_songs)} playlist songs")
+            total_songs = len(single_songs) + len(collection_songs)
+            self.emit_log(
+                f"Found {len(single_songs)} single songs and {len(collection_songs)} collection songs")
             self.emit_progress('overall', 0, total_songs)
             processed_count = 0
 
             # Process manual songs first
-            if manual_songs:
+            if single_songs:
                 self.emit_log("Processing manual songs...")
-                for song_url, _ in manual_songs:
+                for song_url, _ in single_songs:
                     if stop_event.is_set():
                         self.emit_log("Stopping song scraping...")
                         break
@@ -240,7 +252,7 @@ class WebScraper:
 
                             # Update status in playlists data
                             playlists = get_playlist_data()  # Get fresh data
-                            playlists['manual_songs'][song_url]['processed'] = True
+                            playlists['single_songs'][song_url]['processed'] = True
                             save_playlist_data(playlists)
 
                             processed_count += 1
@@ -253,16 +265,16 @@ class WebScraper:
                         continue
 
             # Process playlist songs
-            if playlist_songs:
+            if collection_songs:
                 self.emit_log("Processing playlist songs...")
                 current_playlist = None
                 current_playlist_processed = 0
-                total_playlists = len(set(playlist_url for _, playlist_url in playlist_songs))
+                total_playlists = len(set(playlist_url for _, playlist_url in collection_songs))
                 current_playlist_count = 0
 
                 self.emit_progress('playlist', 0, total_playlists)
 
-                for song_url, playlist_url in playlist_songs:
+                for song_url, playlist_url in collection_songs:
                     if stop_event.is_set():
                         self.emit_log("Stopping song scraping...")
                         break
@@ -276,7 +288,7 @@ class WebScraper:
                         current_playlist = playlist_url
                         current_playlist_count += 1
                         current_playlist_processed = 0
-                        playlist_song_count = len([s for s, p in playlist_songs if p == playlist_url])
+                        playlist_song_count = len([s for s, p in collection_songs if p == playlist_url])
                         self.emit_progress('playlist', current_playlist_count, total_playlists)
                         self.emit_progress('song', 0, playlist_song_count)
                         self.emit_log(f"\nProcessing songs from playlist: {playlist_url}")
@@ -404,3 +416,22 @@ class WebScraper:
         song_file_name = f"{song_data['title']}_{extract_song_id_from_url(song_url)}.json"
         song_file_path = os.path.join(SONGS_DIR, song_file_name)
         save_json(song_data, song_file_path)
+
+    def detect_url_type(self, url):
+        if '/playlist/' in url: return 'playlist'
+        if '/song/' in url: return 'song'
+        if '/@' in url: return 'artist'
+        if '/style/' in url: return 'genre'
+        return None
+
+    def scrape_url_metadata(self, url, url_type):
+        self.driver.get(url)
+        time.sleep(2)
+        title = self.driver.find_element(By.TAG_NAME, 'h1').text
+        return {
+            'title': title,
+            'type': url_type,
+            'url': url,
+            'enabled': True,
+            'songs': []
+        }
