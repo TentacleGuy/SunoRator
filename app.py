@@ -61,15 +61,6 @@ def home():
 def scrape():
     return render_template('content/1-scrape.html')  # Return only content
 
-
-@app.route('/api/scrape/playlists', methods=['GET', 'POST'])
-def api_scrape_playlists():
-    success = thread_manager.start_thread(
-        'playlist_scraping', 
-        scraper.WebScraper(thread_manager.log_queue).scrape_playlists
-    )
-    return jsonify({"status": "started" if success else "already running"})
-
 @app.route('/api/scrape/songs', methods=['GET', 'POST'])
 def api_scrape_songs():
     success = thread_manager.start_thread(
@@ -112,11 +103,16 @@ def scrape_manual_playlists():
 
 @app.route('/api/scrape/manual', methods=['POST'])
 def api_scrape_manual():
+    # Capture URLs from request before starting thread
+    urls = request.json.get('urls', [])
     success = thread_manager.start_thread(
         'manual_scraping',
-        scraper.WebScraper(thread_manager.log_queue).scrape_manual_playlists
+        lambda stop_event, log_queue, pause_event:
+            scraper.WebScraper(thread_manager.log_queue).scrape_urls(stop_event, log_queue, pause_event, manual_urls=urls)
     )
     return jsonify({"status": "started" if success else "already running"})
+
+
 
 @app.route('/api/urls/all', methods=['GET'])
 def get_all_urls():

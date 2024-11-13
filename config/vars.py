@@ -4,6 +4,13 @@ root_folder = os.path.dirname(os.path.abspath(__file__))
 # Pfad zu den PHP-Dateien im content-Ordner
 content_folder = 'templates/content'
 
+
+###Scraping###
+
+#Login settings
+DEFAULT_GOOGLE_EMAIL = ""
+DEFAULT_GOOGLE_PASSWORD = ""
+
 # Ordner für die Song-JSON-Dateien
 SONGS_DIR = "songs"
 SONG_META_DIR = "song_meta"  # Neuer Ordner für die JSON-Dateien

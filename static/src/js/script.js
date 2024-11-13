@@ -1,3 +1,4 @@
+let socket = io();;
 // Main initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeSocketIO();
@@ -21,8 +22,7 @@ Pace.on('done', function() {
 
 // Socket.IO initialization
 function initializeSocketIO() {
-    const socket = io();
-    
+
     socket.on('log_update', function(data) {
         const terminal = document.getElementById('terminal-output');
         terminal.innerHTML += data.data + '\n';
@@ -170,6 +170,7 @@ function loadPageSpecificFunctions() {
     
     // Remove existing event listeners
     removeExistingListeners();
+
     
     // Load page-specific functions
     switch(currentPage) {
@@ -327,17 +328,70 @@ function initGenerationControls() {
 
 // Settings Controls
 function initSettingsControls() {
+    // Load current settings when page loads
+    fetch('/api/settings')
+        .then(response => response.json())
+        .then(settings => {
+            socket.emit('log_update', { data: 'Loading settings...' });
+            document.querySelectorAll('[data-category][data-key]').forEach(input => {
+                const category = input.dataset.category;
+                const key = input.dataset.key;
+                if (settings[category] && settings[category][key] !== undefined) {
+                    if (input.type === 'checkbox') {
+                        input.checked = settings[category][key];
+                    } else {
+                        input.value = settings[category][key];
+                    }
+                    socket.emit('log_update', { data: `Loaded setting: ${category}.${key} = ${settings[category][key]}` });
+                }
+            });
+            socket.emit('log_update', { data: 'Settings loaded successfully' });
+        });
+
+    // Save settings button
     const saveSettingsBtn = document.getElementById('save-settings');
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', function() {
-            const settings = collectSettingsData();
+            const settings = {};
+            socket.emit('log_update', { data: 'Collecting settings...' });
+
+            document.querySelectorAll('[data-category][data-key]').forEach(input => {
+                const category = input.dataset.category;
+                const key = input.dataset.key;
+
+                if (!settings[category]) {
+                    settings[category] = {};
+                }
+
+                settings[category][key] = input.type === 'checkbox' ? input.checked : input.value;
+                socket.emit('log_update', { data: `Setting ${category}.${key} = ${settings[category][key]}` });
+            });
+
             fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             })
             .then(response => response.json())
-            .then(data => console.log('Settings saved'));
+            .then(data => {
+                socket.emit('log_update', { data: 'Settings saved successfully' });
+            });
+        });
+    }
+
+    // Reset settings button
+    const resetSettingsBtn = document.getElementById('reset-settings');
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener('click', function() {
+            if (confirm('Reset all settings to default values?')) {
+                socket.emit('log_update', { data: 'Resetting settings to defaults...' });
+                fetch('/api/settings/reset', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(() => {
+                        socket.emit('log_update', { data: 'Settings reset to defaults' });
+                        window.location.reload();
+                    });
+            }
         });
     }
 }
@@ -535,36 +589,51 @@ function updateLists() {
         });
 }
 
-function updateListContent(elementId, items) {
+function updateListContent(elementId, data) {
     const container = document.getElementById(elementId);
     if (!container) return;
 
-    container.innerHTML = items.map(item => `
-        <div class="list-item" data-url="${item.url}">
-            <div class="item-header">
-                <span class="toggle-children">▶</span>
-                <span class="item-title">${item.title || item.url}</span>
-                <div class="item-controls">
-                    ${item.type !== 'song' ? '<i class="fas fa-sync reload-url"></i>' : ''}
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" ${item.enabled ? 'checked' : ''}>
+    container.innerHTML = Object.entries(data || {})
+        .map(([url, info]) => `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-truncate me-2">
+                        ${info.song_urls && info.song_urls.length > 0 ?
+                            `<span class="toggle-children" style="cursor: pointer;">▶</span> ` :
+                            ''
+                        }
+                        <strong>${info.title || 'Untitled'}</strong> - <small class="text-muted">${url}</small>
                     </div>
-                    <i class="fas fa-trash delete-url"></i>
+                    <div>
+                        ${info.song_urls ? `<small class="me-2">${info.song_urls.length} songs</small>` : ''}
+                        <span class="badge ${info.processed ? 'bg-success' : 'bg-warning'}">
+                            ${info.processed ? 'Processed' : 'Pending'}
+                        </span>
+                    </div>
                 </div>
-            </div>
-            ${item.songs ? `<div class="item-children hidden">
-                ${item.songs.map(song => `
-                    <div class="song-item">
-                        <span class="song-title">${song.title || song.url}</span>
+                ${info.song_urls && info.song_urls.length > 0 ? `
+                    <div class="item-children" style="display: none; margin-left: 20px;">
+                        ${info.song_urls.map(songUrl => `
+                            <div class="song-item mt-2">
+                                <strong>${songUrl.title || 'Untitled'}</strong> - <small class="text-muted">${songUrl}</small>
+                            </div>
+                        `).join('')}
                     </div>
-                `).join('')}
-            </div>` : ''}
-        </div>
-    `).join('');
+                ` : ''}
+            </div>
+        `).join('');
 
-    // Add event listeners
-    addListItemEventListeners(container);
+    // Add click handlers for toggles
+    container.querySelectorAll('.toggle-children').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const children = this.closest('.list-group-item').querySelector('.item-children');
+            const isHidden = children.style.display === 'none';
+            children.style.display = isHidden ? 'block' : 'none';
+            this.textContent = isHidden ? '▼' : '▶';
+        });
+    });
 }
+
 
 function detectUrlType(url) {
     if (url.includes('/playlist/')) return 'playlist';
@@ -594,11 +663,12 @@ function updateUrlLists() {
     fetch('/api/urls/all')
         .then(response => response.json())
         .then(data => {
+            socket.emit('log_update', { data: `Received data: ${JSON.stringify(data)}` });
             // Update each accordion section
             updateListContent('playlists-list', data.playlists);
             updateListContent('songs-list', data.songs);
             updateListContent('artists-list', data.artists);
-            updateListContent('genres-list', data.genres);
+            updateListContent('styles-list', data.genres);
         });
 }
 

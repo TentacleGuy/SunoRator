@@ -7,22 +7,28 @@ class SettingsManager:
         self.settings_file = "config/settings.json"
         # Create config directory if it doesn't exist
         os.makedirs(os.path.dirname(self.settings_file), exist_ok=True)
-        self.load_settings()
+        self.settings = self.load_settings()
 
     def load_settings(self):
         try:
             with open(self.settings_file, 'r') as f:
                 content = f.read()
-                self.settings = json.loads(content) if content else self.get_defaults()
+                return json.loads(content) if content else self.get_default_settings()
         except (FileNotFoundError, json.JSONDecodeError):
-            self.settings = self.get_defaults()
-            self.save_settings()
+            return self.get_default_settings()
+
+    def get_settings(self):
+        return self.settings
+
+    def update_settings(self, new_settings):
+        self.settings.update(new_settings)
+        self.save_settings()
 
     def save_settings(self):
         with open(self.settings_file, 'w') as f:
             json.dump(self.settings, f, indent=4)
 
-    def get_defaults(self):
+    def get_default_settings(self):
         return {
             "model": {
                 "name": DEFAULT_MODEL_NAME,
@@ -37,14 +43,11 @@ class SettingsManager:
             "scraper": {
                 "delay": 5,
                 "headless": True
+            },
+            "login": {
+                "google_email": DEFAULT_GOOGLE_EMAIL,
+                "google_password": DEFAULT_GOOGLE_PASSWORD
             }
         }
-    
-    def update_setting(self, category, key, value):
-        if category in self.settings:
-            self.settings[category][key] = value
-            self.save_settings()
-            return True
-        return False
 
 settings_manager = SettingsManager()

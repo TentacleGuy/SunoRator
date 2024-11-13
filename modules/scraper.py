@@ -91,7 +91,7 @@ class WebScraper:
             playlist_urls = list(set([link.get_attribute("href") for link in playlist_links]))
             self.emit_log(f"Found playlist links: {len(playlist_urls)}")
 
-            self.scrape_playlist_urls(playlist_urls, "auto_playlists", stop_event, pause_event)
+            self.scrape_playlist_urls(playlist_urls, "playlists", stop_event, pause_event)
 
         except Exception as e:
             self.emit_log(f"Error during playlist scraping: {str(e)}")
