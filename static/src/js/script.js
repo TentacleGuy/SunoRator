@@ -211,11 +211,11 @@ function initializeDonutCharts(chartIds) {
 }
 // Scraper Controls
 function initScraperControls() {
+    const charts = ['overall', 'playlist', 'song'];
+    initializeDonutCharts(charts);
+
     const addUrlBtn = document.getElementById('add-url');
     const urlInput = document.getElementById('url-input');
-    const charts = ['overall', 'playlist', 'song'];
-
-    initializeDonutCharts(charts);
 
     if (addUrlBtn) {
         addUrlBtn.addEventListener('click', () => {
@@ -236,13 +236,14 @@ function initScraperControls() {
         });
     }
 
-    const scrapeButtons = {
-        'scrape-playlists': '/api/scrape/playlists',
-        'scrape-manual-playlists': '/api/scrape/manual',
-        'scrape-songs': '/api/scrape/songs'
+    const scrapingActions = {
+        'scrape-collections': '/api/scrape/collections',         // Collect playlists, artists, styles
+        'scrape-song-urls': '/api/scrape/song-urls',               // Fetch only song URLs from collections
+        'scrape-songs': '/api/scrape/songs'                     // Scrape song details (title, lyrics, etc.)
     };
 
-    Object.entries(scrapeButtons).forEach(([id, endpoint]) => {
+    // Add event listeners to buttons for each scraping action
+    Object.entries(scrapingActions).forEach(([id, endpoint]) => {
         const button = document.getElementById(id);
         if (button) {
             button.addEventListener('click', () => {
@@ -260,8 +261,13 @@ function initScraperControls() {
         }
     });
 
-    // Initial load of lists
+    // Initial load of lists and setup of controls
     updateUrlLists();
+    initializeCollectionControls();
+
+    // Setup WebSocket listeners for updates
+    socket.on('playlists_updated', updateUrlLists);
+    socket.on('thread_status_changed', updateUrlLists);
 }
 
 // Preparation Controls
@@ -378,7 +384,6 @@ function initSettingsControls() {
             });
         });
     }
-
     // Reset settings button
     const resetSettingsBtn = document.getElementById('reset-settings');
     if (resetSettingsBtn) {
@@ -579,6 +584,70 @@ function initializeLoggingDrawer(){
     });
 }
 
+function handleCollectionControls(e) {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const item = button.closest('.list-group-item');
+    if (!item) return;
+
+    const url = item.dataset.url;
+    if (!url) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    button.disabled = true;
+
+    if (button.classList.contains('toggle-status')) {
+        fetch(`/api/urls/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const icon = button.querySelector('i');
+                icon.classList.toggle('text-success');
+                icon.classList.toggle('text-danger');
+                updateUrlLists();
+            }
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            button.disabled = false;
+        });
+    } else if (button.classList.contains('reload-url')) {
+        fetch('/api/scrape/single-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+    } else if (button.classList.contains('delete-url')) {
+        if (confirm('Delete this URL?')) {
+            fetch(`/api/urls/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            })
+            .then(() => updateUrlLists())
+            .finally(() => {
+                button.disabled = false;
+            });
+        } else {
+            button.disabled = false;
+        }
+    }
+}
+
+function initializeCollectionControls() {
+    document.removeEventListener('click', handleCollectionControls);
+    document.addEventListener('click', handleCollectionControls);
+}
+
 function updateLists() {
     fetch('/api/playlists/all')
         .then(response => response.json())
@@ -595,31 +664,60 @@ function updateListContent(elementId, data) {
 
     container.innerHTML = Object.entries(data || {})
         .map(([url, info]) => `
-            <div class="list-group-item">
+            <div class="list-group-item" data-url="${url}" data-id="${url}">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-truncate me-2">
+                    <div class="flex-grow-1 me-2">
                         ${info.song_urls && info.song_urls.length > 0 ?
                             `<span class="toggle-children" style="cursor: pointer;">▶</span> ` :
                             ''
                         }
-                        <strong>${info.title || 'Untitled'}</strong> - <small class="text-muted">${url}</small>
+                        <strong>${info.title || 'Untitled'} - </strong><small>${url}</small>
                     </div>
-                    <div>
-                        ${info.song_urls ? `<small class="me-2">${info.song_urls.length} songs</small>` : ''}
+                    <div class="d-flex align-items-center gap-2">
                         <span class="badge ${info.processed ? 'bg-success' : 'bg-warning'}">
                             ${info.processed ? 'Processed' : 'Pending'}
                         </span>
+                        <div class="item-controls">
+                            <button class="btn btn-sm toggle-status" title="Toggle scraping status">
+                                <i class="bi bi-circle-fill ${info.enabled ? 'text-success' : 'text-danger'}"></i>
+                            </button>
+                            <button class="btn btn-sm reload-url" title="Reload this URL">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                            <button class="btn btn-sm delete-url" title="Delete URL">
+                                <i class="bi bi-trash text-danger"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 ${info.song_urls && info.song_urls.length > 0 ? `
-                    <div class="item-children" style="display: none; margin-left: 20px;">
-                        ${info.song_urls.map(songUrl => `
-                            <div class="song-item mt-2">
-                                <strong>${songUrl.title || 'Untitled'}</strong> - <small class="text-muted">${songUrl}</small>
+                <div class="item-children" style="display: none; margin-left: 20px;">
+                    ${info.song_urls.map(song => `
+                        <div class="song-item mt-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${song.title || 'Untitled'}</strong> - <small>${song.url}</small>
+
                             </div>
-                        `).join('')}
-                    </div>
-                ` : ''}
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge ${song.processed ? 'bg-success' : 'bg-warning'}">
+                                    ${song.processed ? 'Processed' : 'Pending'}
+                                </span>
+                                <div class="item-controls">
+                                    <button class="btn btn-sm toggle-song-status" title="Toggle song scraping status">
+                                        <i class="bi bi-circle-fill ${song.enabled ? 'text-success' : 'text-danger'}"></i>
+                                    </button>
+                                    <button class="btn btn-sm reload-song" title="Reload song data">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm delete-song" title="Delete song">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
             </div>
         `).join('');
 
@@ -632,8 +730,9 @@ function updateListContent(elementId, data) {
             this.textContent = isHidden ? '▼' : '▶';
         });
     });
-}
 
+    initializeCollectionControls();
+}
 
 function detectUrlType(url) {
     if (url.includes('/playlist/')) return 'playlist';

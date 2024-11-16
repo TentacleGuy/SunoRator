@@ -16,7 +16,7 @@ SONGS_DIR = "songs"
 SONG_META_DIR = "song_meta"  # Neuer Ordner für die JSON-Dateien
 
 # JSON Datei Pfade im Ordner 'song_meta'
-SCRAPED_PLAYLISTS_FILE = f"{SONG_META_DIR}/auto_playlists_and_songs.json"
+SCRAPED_URLS_FILE = f"{SONG_META_DIR}/urls.json"
 STYLES_FILE = f"{SONG_META_DIR}/all_styles.json"
 SONG_STYLES_MAPPING_FILE = f"{SONG_META_DIR}/song_styles_mapping.json"
 META_TAGS_FILE = f"{SONG_META_DIR}/all_meta_tags.json"

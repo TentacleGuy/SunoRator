@@ -53,9 +53,12 @@ def load_json(file_path):
 
 # Speichern der JSON Datei mit einem Sperrmechanismus, um Dateikonflikte zu vermeiden
 def save_json(data, file_path):
-    with file_lock:
-        with open(file_path, 'w', encoding="utf-8") as file:
-            json.dump(data, file, indent=4)
+    with file_lock:  # Using the existing file_lock
+        temp_path = file_path + '.tmp'
+        with open(temp_path, 'w', encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+        os.replace(temp_path, file_path)  # Atomic file replacement
+
 
 # Bereinige ungültige Zeichen im Dateinamen
 def clean_filename(filename):
@@ -87,7 +90,7 @@ def get_processed_song_ids():
 #################Songscraper#########################
 def get_playlist_data():
     """Centralized function to load playlist data"""
-    data = load_json(SCRAPED_PLAYLISTS_FILE)
+    data = load_json(SCRAPED_URLS_FILE)
     # Initialize default structure if empty or invalid
     if not isinstance(data, dict) or not all(key in data for key in ['playlists', 'artists', 'genres', 'songs']):
         data = {
@@ -101,10 +104,9 @@ def get_playlist_data():
 
 def save_playlist_data(data):
     """Centralized function to save playlist data"""
-    save_json(data, SCRAPED_PLAYLISTS_FILE)
+    save_json(data, SCRAPED_URLS_FILE)
 
-
-def add_url_to_collection(url, url_type):
+def add_url_to_collection(url, url_type, title=None):
     """Generic function to add URLs to any collection"""
     data = get_playlist_data()
     type_mapping = {
@@ -121,7 +123,7 @@ def add_url_to_collection(url, url_type):
     if url not in data[category]:
         data[category][url] = {
             "type": url_type,
-            "title": "",
+            "title": title or "",
             "enabled": True,
             "song_urls": [] if url_type != 'song' else None
         }

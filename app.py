@@ -2,8 +2,8 @@ import logging
 from flask import Flask, render_template, jsonify, request
 from utils.thread_manager import thread_manager
 from modules import scraper, prepare, trainer, generator
-from modules.settings import settings_manager  # Direct import of settings_manager
-from utils.socket_manager import init_socket, socketio
+from utils.settings_manager import settings_manager  # Direct import of settings_manager
+from utils.socket_manager import socketio
 from utils.utils import *
 from config.vars import *
 
@@ -61,6 +61,43 @@ def home():
 def scrape():
     return render_template('content/1-scrape.html')  # Return only content
 
+@app.route('/api/scrape/collections', methods=['POST'])
+def api_scrape_collections():
+    success = thread_manager.start_thread(
+        'collection_scraping',
+        scraper.WebScraper(thread_manager.log_queue).scrape_collections
+    )
+    return jsonify({"status": "started" if success else "already running"})
+
+@app.route('/api/scrape/song-urls', methods=['POST'])
+def api_scrape_song_urls():
+    success = thread_manager.start_thread(
+        'song_url_scraping',
+        scraper.WebScraper(thread_manager.log_queue).scrape_song_urls
+    )
+    return jsonify({"status": "started" if success else "already running"})
+
+@app.route('/api/collections/<collection_id>', methods=['DELETE'])
+def delete_collection(collection_id):
+    data = get_playlist_data()
+    for collection_type in ['playlists', 'artists', 'genres']:
+        if collection_id in data[collection_type]:
+            del data[collection_type][collection_id]
+            save_playlist_data(data)
+            return jsonify({"status": "success"})
+    return jsonify({"status": "not found"}), 404
+
+@app.route('/api/collections/<collection_id>/toggle', methods=['POST'])
+def toggle_collection(collection_id):
+    data = get_playlist_data()
+    for collection_type in ['playlists', 'artists', 'genres']:
+        if collection_id in data[collection_type]:
+            data[collection_type][collection_id]['enabled'] = not data[collection_type][collection_id].get('enabled', True)
+            save_playlist_data(data)
+            return jsonify({"status": "success"})
+    return jsonify({"status": "not found"}), 404
+
+
 @app.route('/api/scrape/songs', methods=['GET', 'POST'])
 def api_scrape_songs():
     success = thread_manager.start_thread(
@@ -93,30 +130,18 @@ def add_manual_song():
     success = scraper_instance.add_manual_song(song_url)
     return jsonify({"success": success})
 
-@app.route('/api/scrape/manual-playlists', methods=['POST'])
-def scrape_manual_playlists():
+@app.route('/api/scrape/single-url', methods=['POST'])
+def scrape_single_url():
+    url = request.json.get('url')
     success = thread_manager.start_thread(
-        'manual_playlist_scraping',
-        scraper.WebScraper(thread_manager.log_queue).scrape_manual_playlists
-    )
-    return jsonify({"status": "started" if success else "already running"})
-
-@app.route('/api/scrape/manual', methods=['POST'])
-def api_scrape_manual():
-    # Capture URLs from request before starting thread
-    urls = request.json.get('urls', [])
-    success = thread_manager.start_thread(
-        'manual_scraping',
+        f'scrape_{url}',
         lambda stop_event, log_queue, pause_event:
-            scraper.WebScraper(thread_manager.log_queue).scrape_urls(stop_event, log_queue, pause_event, manual_urls=urls)
+            scraper.WebScraper(thread_manager.log_queue).scrape_single_url(stop_event, log_queue, pause_event, url)
     )
     return jsonify({"status": "started" if success else "already running"})
-
-
-
 @app.route('/api/urls/all', methods=['GET'])
 def get_all_urls():
-    data = load_json(SCRAPED_PLAYLISTS_FILE)
+    data = load_json(SCRAPED_URLS_FILE)
     if not isinstance(data, dict):
         data = {
             "playlists": {},
@@ -125,6 +150,36 @@ def get_all_urls():
             "songs": {}
         }
     return jsonify(data)
+
+@app.route('/api/urls/toggle', methods=['POST'])
+def toggle_url():
+    data = request.json
+    url = data.get('url')
+    playlists = get_playlist_data()
+
+    # Find the correct collection type for this URL
+    for collection_type in ['playlists', 'artists', 'genres', 'songs']:
+        if url in playlists[collection_type]:
+            playlists[collection_type][url]['enabled'] = not playlists[collection_type][url].get('enabled', True)
+            save_playlist_data(playlists)
+            return jsonify({
+                "success": True,
+                "enabled": playlists[collection_type][url]['enabled']
+            })
+
+    return jsonify({"success": False}), 404
+
+@app.route('/api/urls/delete', methods=['POST'])
+def delete_url():
+    data = request.json
+    url = data.get('url')
+    playlists = get_playlist_data()
+    for collection in playlists.values():
+        if url in collection:
+            del collection[url]
+    save_playlist_data(playlists)
+    return jsonify({"success": True})
+
 
 @app.route('/api/urls/add', methods=['POST'])
 def add_url():
@@ -171,19 +226,20 @@ def api_generate():
 def settings():
     return render_template('content/5-settings.html')
 
-
-
 @app.route('/api/settings', methods=['GET', 'POST'])
 def handle_settings():
     if request.method == 'POST':
         data = request.json
-        settings_manager.update_setting(
-            data['category'],
-            data['key'],
-            data['value']
-        )
+        settings_manager.update_settings(data)
         return jsonify({"status": "success"})
     return jsonify(settings_manager.settings)
+
+@app.route('/api/settings/reset', methods=['POST'])
+def reset_settings():
+    settings_manager.settings = settings_manager.get_default_settings()
+    settings_manager.save_settings()
+    return jsonify({"status": "success"})
+
 
 
 # Run the app

@@ -78,48 +78,229 @@ class WebScraper:
                 self.driver.quit()
                 self.driver = None
 
-    def scrape_playlists(self, stop_event, log_queue, pause_event):
+    def scrape_collections(self, stop_event, log_queue, pause_event):
         self.init_driver()
+        stats = {
+            'playlist': {'found': 0, 'new': 0},
+            'artist': {'found': 0, 'new': 0},
+            'genre': {'found': 0, 'new': 0}
+        }
 
         try:
             self.emit_log("Opening suno.com...")
             self.driver.get("https://suno.com")
             time.sleep(5)
 
-            self.emit_log("Searching for playlist links...")
-            playlist_links = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/playlist/')]")
-            playlist_urls = list(set([link.get_attribute("href") for link in playlist_links]))
-            self.emit_log(f"Found playlist links: {len(playlist_urls)}")
+            # Scrape playlists
+            playlist_elements = self.driver.find_elements(By.XPATH, "//a[@title and contains(@href, '/playlist/')]")
+            for elem in playlist_elements:
+                url = elem.get_attribute("href")
+                title = elem.get_attribute("title")
+                stats['playlist']['found'] += 1
+                if add_url_to_collection(url, "playlist", title):
+                    stats['playlist']['new'] += 1
+                self.emit_log(f"Found Playlist: {title} - {url}")
 
-            self.scrape_playlist_urls(playlist_urls, "playlists", stop_event, pause_event)
+            # Scrape artists
+            artist_elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/@')]//span[@title]")
+            for elem in artist_elements:
+                url = elem.find_element(By.XPATH, "..").get_attribute("href")
+                title = elem.get_attribute("title")
+                stats['artist']['found'] += 1
+                if add_url_to_collection(url, "artist", title):
+                    stats['artist']['new'] += 1
+                self.emit_log(f"Found Artist: {title} - {url}")
 
-        except Exception as e:
-            self.emit_log(f"Error during playlist scraping: {str(e)}")
-            raise
+            # Scrape styles
+            style_elements = self.driver.find_elements(By.XPATH, "//a[@title and contains(@href, '/style/')]")
+            for elem in style_elements:
+                url = elem.get_attribute("href")
+                title = elem.get_attribute("title")
+                stats['genre']['found'] += 1
+                if add_url_to_collection(url, "genre", title):
+                    stats['genre']['new'] += 1
+                self.emit_log(f"Found Style: {title} - {url}")
+
+            # Output final statistics
+            self.emit_log("\nCollection URL Scraping Statistics:")
+            self.emit_log(f"Playlists: {stats['playlist']['found']} found, {stats['playlist']['new']} new")
+            self.emit_log(f"Artists: {stats['artist']['found']} found, {stats['artist']['new']} new")
+            self.emit_log(f"Styles: {stats['genre']['found']} found, {stats['genre']['new']} new")
+            self.emit_log("\nCollection URL scraping completed successfully!")
+
+            socketio.emit('thread_status_changed')
 
         finally:
             if self.driver:
                 self.driver.quit()
                 self.driver = None
+            if stop_event:
+                stop_event.set()
 
-    def add_manual_playlist(self, playlist_url):
-        return add_url_to_collection(playlist_url, "manual_playlists")
+    def scrape_song_urls(self, stop_event, log_queue, pause_event):
+        self.init_driver()
+        stats = {
+            'homepage': {'songs_found': 0, 'new_songs': 0},
+            'playlists': {'processed': 0, 'songs_found': 0, 'new_songs': 0},
+            'artists': {'processed': 0, 'songs_found': 0, 'new_songs': 0},
+            'genres': {'processed': 0, 'songs_found': 0, 'new_songs': 0}
+        }
+
+        try:
+            playlists = get_playlist_data()
+            self.emit_log("Starting song URL scraping...")
+
+            # First scan homepage
+            self.emit_log("\nScanning homepage for songs...")
+            self.driver.get("https://suno.com")
+            time.sleep(5)
+
+            # Find all links containing '/song/'
+            song_elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
+
+            for elem in song_elements:
+                song_url = elem.get_attribute("href")
+                # Try to get title from different possible sources
+                title = elem.get_attribute("title")
+                if not title:
+                    try:
+                        # Try to get text from inner span
+                        title = elem.find_element(By.CSS_SELECTOR, "span").text
+                    except:
+                        try:
+                            # Try direct text content
+                            title = elem.text
+                        except:
+                            title = "Unknown"
+
+                stats['homepage']['songs_found'] += 1
+                if add_url_to_collection(song_url, "song", title):
+                    stats['homepage']['new_songs'] += 1
+                    self.emit_log(f"Found new song on homepage: {title} - {song_url}")
+
+            save_playlist_data(playlists)
+            # Then process collection URLs
+            for collection_type in ['playlists', 'artists', 'genres']:
+                if stop_event.is_set():
+                    self.emit_log("Stopping song URL scraping...")
+                    break
+
+                enabled_collections = {url: data for url, data in playlists[collection_type].items()
+                                       if data.get('enabled', True)}
+
+                if enabled_collections:
+                    self.emit_log(f"\nProcessing {collection_type}: {len(enabled_collections)} enabled items")
+
+                for url, data in enabled_collections.items():
+                    if stop_event.is_set():
+                        break
+
+                    while pause_event.is_set():
+                        time.sleep(0.1)
+                        if stop_event.is_set():
+                            break
+
+                    self.emit_log(f"\nProcessing {collection_type} URL: {url}")
+                    self.driver.get(url)
+                    time.sleep(5)
+
+                    song_elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
+                    current_songs = set(song.get('url', '') for song in data.get('song_urls', []))
+                    new_songs = []
+
+                    for elem in song_elements:
+                        song_url = elem.get_attribute("href")
+                        title = elem.get_attribute("title")
+                        if not title:
+                            try:
+                                title = elem.find_element(By.CSS_SELECTOR, "span").text
+                            except:
+                                try:
+                                    title = elem.text
+                                except:
+                                    title = "Unknown"
+
+                        stats[collection_type]['songs_found'] += 1
+
+                        if song_url not in current_songs:
+                            new_songs.append({"url": song_url, "title": title})
+                            stats[collection_type]['new_songs'] += 1
+                            self.emit_log(f"Found new song: {title}")
+
+                    if new_songs:
+                        data['song_urls'] = data.get('song_urls', []) + new_songs
+
+                    data['processed'] = True
+                    stats[collection_type]['processed'] += 1
+                    self.emit_log(f"Found {len(new_songs)} new songs in this {collection_type}")
+
+            save_playlist_data(playlists)
+
+            # Output final statistics
+            self.emit_log("\nSong URL Scraping Statistics:")
+            self.emit_log(f"\nHomepage:")
+            self.emit_log(f"Total songs found: {stats['homepage']['songs_found']}")
+            self.emit_log(f"New songs: {stats['homepage']['new_songs']}")
+
+            for ctype in ['playlists', 'artists', 'genres']:
+                self.emit_log(f"\n{ctype.capitalize()}:")
+                self.emit_log(f"Processed: {stats[ctype]['processed']}")
+                self.emit_log(f"Total songs found: {stats[ctype]['songs_found']}")
+                self.emit_log(f"New songs: {stats[ctype]['new_songs']}")
+
+            self.emit_log("\nSong URL scraping completed successfully!")
+            socketio.emit('thread_status_changed')
+
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
+            if stop_event:
+                stop_event.set()
+
+    def scrape_single_url(self, stop_event, log_queue, pause_event, url):
+        self.init_driver()
+        try:
+            self.emit_log(f"Starting to scrape URL: {url}")
+            self.driver.get(url)
+            time.sleep(5)
+
+            song_elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
+            song_urls = []
+
+            for elem in song_elements:
+                song_url = elem.get_attribute("href")
+                title = elem.get_attribute("title")
+                if not title:
+                    try:
+                        title = elem.find_element(By.CSS_SELECTOR, "span").text
+                    except:
+                        title = "Unknown"
+                song_urls.append({"url": song_url, "title": title})
+                self.emit_log(f"Found song: {title} - {song_url}")
+
+            playlists = get_playlist_data()
+            for collection_type in ['playlists', 'artists', 'genres']:
+                if url in playlists[collection_type]:
+                    playlists[collection_type][url]["song_urls"] = song_urls
+                    playlists[collection_type][url]["processed"] = True
+                    save_playlist_data(playlists)
+                    self.emit_log(f"Updated {collection_type}: {url} with {len(song_urls)} songs")
+                    break
+
+            socketio.emit('playlists_updated')
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
 
     def add_manual_song(self, song_url):
-        return add_url_to_collection(song_url, "single_songs")
-
-    def scrape_manual_playlists(self, stop_event, log_queue, pause_event):
-        playlists = get_playlist_data()
-        collection_types = ['playlists', 'artists', 'genres']
-
-        for collection_type in collection_types:
-            unprocessed_items = [
-                url for url, data in playlists[collection_type].items()
-                if not data.get('processed')
-            ]
-            if unprocessed_items:
-                self.emit_log(f"Processing {collection_type}...")
-                self.scrape_playlist_urls(unprocessed_items, collection_type, stop_event, pause_event)
+        return add_url_to_collection(song_url, "songs", {
+            "url": song_url,
+            "enabled": True,
+            "processed": False,
+            "title": ""
+        })
 
     def scrape_playlist_urls(self, urls, collection_type, stop_event, pause_event):
         self.init_driver()
@@ -146,6 +327,14 @@ class WebScraper:
                     song_links = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
                     song_urls = list(set([link.get_attribute("href") for link in song_links]))
 
+                    # Convert to objects with status attributes
+                    song_objects = [{
+                        "url": url,
+                        "enabled": True,
+                        "processed": False,
+                        "title": ""
+                    } for url in song_urls]
+
                     # Log each found song URL
                     for song_url in song_urls:
                         self.emit_log(f"Found song URL: {song_url}")
@@ -156,7 +345,7 @@ class WebScraper:
                             "processed": False
                         }
 
-                    playlists[collection_type][url]["song_urls"] = song_urls
+                    playlists[collection_type][url]["song_urls"] = song_objects
                     playlists[collection_type][url]["processed"] = True
 
                     save_playlist_data(playlists)
@@ -182,26 +371,25 @@ class WebScraper:
             playlists = get_playlist_data()
 
             # Process individual songs
-            single_songs = [(url, None) for url in playlists['songs'].keys()]
+            single_songs = [(song['url'], None) for song in playlists['songs'].values()]
 
             # Process songs from all other collections
             collection_songs = []
             for collection_type in ['playlists', 'artists', 'genres']:
-                for url, data in playlists[collection_type].items():
+                for collection_url, data in playlists[collection_type].items():
                     if data.get('song_urls'):
-                        collection_songs.extend([(song_url, url) for song_url in data['song_urls']])
+                        collection_songs.extend([(song['url'], collection_url) for song in data['song_urls']])
 
             # Update overall progress
             total_songs = len(single_songs) + len(collection_songs)
-            self.emit_log(
-                f"Found {len(single_songs)} single songs and {len(collection_songs)} collection songs")
+            self.emit_log(f"Found {len(single_songs)} single songs and {len(collection_songs)} collection songs")
             self.emit_progress('overall', 0, total_songs)
             processed_count = 0
 
             # Process manual songs first
             if single_songs:
                 self.emit_log("Processing manual songs...")
-                for song_url, _ in single_songs:
+                for song_obj, _ in single_songs:
                     if stop_event.is_set():
                         self.emit_log("Stopping song scraping...")
                         break
@@ -211,7 +399,9 @@ class WebScraper:
                         if stop_event.is_set():
                             break
 
+                    song_url = song_obj['url']
                     song_id = extract_song_id_from_url(song_url)
+
                     if song_id in processed_song_ids:
                         self.emit_log(f"Song {song_id} already exists -> skipping")
                         processed_count += 1
@@ -344,9 +534,9 @@ class WebScraper:
                         self.emit_log(f"Error processing song: {str(e)}")
                         continue
 
-            self.emit_log("Song scraping completed")
-            socketio.emit('thread_status_changed')
-            socketio.emit('playlists_updated')
+                self.emit_log("Song scraping completed")
+                socketio.emit('thread_status_changed')
+                socketio.emit('playlists_updated')
 
         finally:
             if self.driver:
@@ -416,13 +606,6 @@ class WebScraper:
         song_file_name = f"{song_data['title']}_{extract_song_id_from_url(song_url)}.json"
         song_file_path = os.path.join(SONGS_DIR, song_file_name)
         save_json(song_data, song_file_path)
-
-    def detect_url_type(self, url):
-        if '/playlist/' in url: return 'playlist'
-        if '/song/' in url: return 'song'
-        if '/@' in url: return 'artist'
-        if '/style/' in url: return 'genre'
-        return None
 
     def scrape_url_metadata(self, url, url_type):
         self.driver.get(url)
