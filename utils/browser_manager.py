@@ -11,12 +11,27 @@ class BrowserManager:
         self.init_driver()
 
     def init_driver(self):
+        print("Starting browser initialization...")
         chrome_options = Options()
         settings = settings_manager.get_settings()
-        if settings.get('scraper', {}).get('headless', True):
+        print(f"Got settings: {settings}")
+        scraper_settings = settings.get('scraper', {})
+        print(f"Scraper settings: {scraper_settings}")
+
+        if scraper_settings.get('headless', True):
             chrome_options.add_argument("--headless")
+        if scraper_settings.get('no_sandbox', True):
+            chrome_options.add_argument("--no-sandbox")
+        if scraper_settings.get('dev_shm_usage', True):
+            chrome_options.add_argument("--disable-dev-shm-usage")
+
+        window_size = scraper_settings.get('window_size', '1920,1080')
+        chrome_options.add_argument(f"--window-size={window_size}")
+
+        print("Creating Chrome driver...")
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        print("Chrome driver created successfully")
 
     def get_driver(self):
         if not self.driver:

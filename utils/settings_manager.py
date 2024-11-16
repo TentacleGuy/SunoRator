@@ -42,12 +42,17 @@ class SettingsManager:
             },
             "scraper": {
                 "delay": 5,
-                "headless": True
+                "headless": True,
+                "no_sandbox": True,
+                "dev_shm_usage": True,
+                "window_size": "1920,1080",
+                "use_login": False
             },
             "login": {
                 "google_email": DEFAULT_GOOGLE_EMAIL,
                 "google_password": DEFAULT_GOOGLE_PASSWORD
             }
         }
+
 
 settings_manager = SettingsManager()

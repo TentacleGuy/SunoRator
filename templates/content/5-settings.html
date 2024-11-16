@@ -81,7 +81,7 @@
             </div>
         </div>
 
-        <!-- Scraper Settings Card -->
+                <!-- Scraper Settings Card -->
         <div class="col-12 mb-4">
             <div class="card rounded-4">
                 <div class="card-header py-3">
@@ -94,15 +94,32 @@
                             <input class="form-control" type="number" id="scraper-delay" data-category="scraper" data-key="delay">
                         </div>
                         <div class="col-md-6">
-                            <div class="form-check mt-4">
+                            <label class="form-label">Window Size</label>
+                            <input class="form-control" type="text" id="window-size" data-category="scraper" data-key="window_size">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="scraper-headless" data-category="scraper" data-key="headless">
                                 <label class="form-check-label">Enable headless mode</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="no-sandbox" data-category="scraper" data-key="no_sandbox">
+                                <label class="form-check-label">Enable No Sandbox</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dev-shm-usage" data-category="scraper" data-key="dev_shm_usage">
+                                <label class="form-check-label">Disable Dev SHM Usage</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="use-login" data-category="scraper" data-key="use_login">
+                                <label class="form-check-label">Use Login</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
 
         <!-- Action Buttons -->
         <div class="col-12">

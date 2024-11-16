@@ -9,6 +9,7 @@ from datetime import datetime
 from utils.utils import *
 from config.vars import *
 from utils.socket_manager import socketio
+from utils.browser_manager import browser_manager
 
 class WebScraper:
     def __init__(self, log_queue):
@@ -37,16 +38,13 @@ class WebScraper:
         })
 
     def init_driver(self):
-        self.emit_log("Initialisiere Webdriver...")
-        chrome_options = Options()
-        #chrome_options.add_argument("--headless")
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.emit_log("Webdriver initialisiert.")
+        self.emit_log("Initializing WebDriver...")
+        self.driver = browser_manager.get_driver()
+        self.emit_log("WebDriver initialized.")
 
     def fetch_song_data(self, driver, song_url):
         """Fetches song data from the song page."""
-        self.init_driver()
+        self.driver = browser_manager.get_driver()
         try:
             self.driver.get(song_url)
             time.sleep(5)
@@ -75,11 +73,10 @@ class WebScraper:
             }
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
 
     def scrape_collections(self, stop_event, log_queue, pause_event):
-        self.init_driver()
         stats = {
             'playlist': {'found': 0, 'new': 0},
             'artist': {'found': 0, 'new': 0},
@@ -87,6 +84,7 @@ class WebScraper:
         }
 
         try:
+            self.driver = browser_manager.get_driver()
             self.emit_log("Opening suno.com...")
             self.driver.get("https://suno.com")
             time.sleep(5)
@@ -132,13 +130,13 @@ class WebScraper:
 
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
             if stop_event:
                 stop_event.set()
 
     def scrape_song_urls(self, stop_event, log_queue, pause_event):
-        self.init_driver()
+        self.driver = browser_manager.get_driver()
         stats = {
             'homepage': {'songs_found': 0, 'new_songs': 0},
             'playlists': {'processed': 0, 'songs_found': 0, 'new_songs': 0},
@@ -253,13 +251,13 @@ class WebScraper:
 
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
             if stop_event:
                 stop_event.set()
 
     def scrape_single_url(self, stop_event, log_queue, pause_event, url):
-        self.init_driver()
+        self.driver = browser_manager.get_driver()
         try:
             self.emit_log(f"Starting to scrape URL: {url}")
             self.driver.get(url)
@@ -291,7 +289,7 @@ class WebScraper:
             socketio.emit('playlists_updated')
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
 
     def add_manual_song(self, song_url):
@@ -303,7 +301,7 @@ class WebScraper:
         })
 
     def scrape_playlist_urls(self, urls, collection_type, stop_event, pause_event):
-        self.init_driver()
+        self.driver = browser_manager.get_driver()
         playlists = get_playlist_data()
         total_urls = len(urls)
 
@@ -361,11 +359,11 @@ class WebScraper:
 
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
 
     def scrape_songs(self, stop_event, log_queue, pause_event):
-        self.init_driver()
+        self.driver = browser_manager.get_driver()
         try:
             processed_song_ids = get_processed_song_ids()
             playlists = get_playlist_data()
@@ -540,7 +538,7 @@ class WebScraper:
 
         finally:
             if self.driver:
-                self.driver.quit()
+                browser_manager.close()
                 self.driver = None
 
     def save_song_data(self, song_data):

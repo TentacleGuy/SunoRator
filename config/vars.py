@@ -1,55 +1,168 @@
 import os
 
-root_folder = os.path.dirname(os.path.abspath(__file__))
-# Pfad zu den PHP-Dateien im content-Ordner
-content_folder = 'templates/content'
-
-
-###Scraping###
-
-#Login settings
-DEFAULT_GOOGLE_EMAIL = ""
-DEFAULT_GOOGLE_PASSWORD = ""
-
-# Ordner für die Song-JSON-Dateien
-SONGS_DIR = "songs"
-SONG_META_DIR = "song_meta"  # Neuer Ordner für die JSON-Dateien
-
-# JSON Datei Pfade im Ordner 'song_meta'
-SCRAPED_URLS_FILE = f"{SONG_META_DIR}/urls.json"
-STYLES_FILE = f"{SONG_META_DIR}/all_styles.json"
-SONG_STYLES_MAPPING_FILE = f"{SONG_META_DIR}/song_styles_mapping.json"
-META_TAGS_FILE = f"{SONG_META_DIR}/all_meta_tags.json"
-SONG_META_MAPPING_FILE = f"{SONG_META_DIR}/song_meta_mapping.json"
-
-####Datenvorbereitung####
-EXPECTED_KEYS = {
-    "title": ["title", "songtitle", "name"],
-    "lyrics": ["lyrics", "text", "songtext"],
-    "styles": ["styles", "genre", "genres", "style"],
-    "metatags": ["metatags", "tags", "meta"],
-    "language": ["language", "lang", "sprache"]
+SETTINGS = {
+    "model": {
+        "label": "Model Settings",
+        "fields": {
+            "name": {
+                "type": "text",
+                "default": "gpt2",
+                "label": "Model Name"
+            },
+            "epochs": {
+                "type": "number",
+                "default": 3,
+                "label": "Epochs"
+            },
+            "learning_rate": {
+                "type": "number",
+                "default": 5e-5,
+                "label": "Learning Rate"
+            },
+            "batch_size": {
+                "type": "number",
+                "default": 4,
+                "label": "Batch Size"
+            },
+            "max_length": {
+                "type": "number",
+                "default": 128,
+                "label": "Max Length"
+            },
+            "warmup_steps": {
+                "type": "number",
+                "default": 500,
+                "label": "Warmup Steps"
+            },
+            "weight_decay": {
+                "type": "number",
+                "default": 0.01,
+                "label": "Weight Decay"
+            },
+            "gradient_accumulation_steps": {
+                "type": "number",
+                "default": 4,
+                "label": "Gradient Accumulation Steps"
+            },
+            "logging_steps": {
+                "type": "number",
+                "default": 100,
+                "label": "Logging Steps"
+            },
+            "save_steps": {
+                "type": "number",
+                "default": 500,
+                "label": "Save Steps"
+            },
+            "eval_steps": {
+                "type": "number",
+                "default": 500,
+                "label": "Eval Steps"
+            }
+        }
+    },
+    "paths": {
+        "label": "Path Settings",
+        "fields": {
+            "songs_dir": {
+                "type": "text",
+                "default": "songs",
+                "label": "Songs Directory"
+            },
+            "meta_dir": {
+                "type": "text",
+                "default": "song_meta",
+                "label": "Meta Directory"
+            },
+            "scraped_urls_file": {
+                "type": "text",
+                "default": "song_meta/urls.json",
+                "label": "Scraped URLs File"
+            },
+            "styles_file": {
+                "type": "text",
+                "default": "song_meta/all_styles.json",
+                "label": "Styles File"
+            },
+            "song_styles_mapping_file": {
+                "type": "text",
+                "default": "song_meta/song_styles_mapping.json",
+                "label": "Song Styles Mapping File"
+            },
+            "meta_tags_file": {
+                "type": "text",
+                "default": "song_meta/all_meta_tags.json",
+                "label": "Meta Tags File"
+            },
+            "song_meta_mapping_file": {
+                "type": "text",
+                "default": "song_meta/song_meta_mapping.json",
+                "label": "Song Meta Mapping File"
+            },
+            "trainingdata_file": {
+                "type": "text",
+                "default": "trainingdata.json",
+                "label": "Training Data File"
+            }
+        }
+    },
+    "scraper": {
+        "label": "Scraper Settings",
+        "fields": {
+            "delay": {
+                "type": "number",
+                "default": 5,
+                "label": "Delay (seconds)"
+            },
+            "window_size": {
+                "type": "text",
+                "default": "1920,1080",
+                "label": "Window Size"
+            },
+            "browser_options": {
+                "type": "checkbox_group",
+                "label": "Browser Options",
+                "options": {
+                    "headless": {
+                        "default": True,
+                        "label": "Enable Headless Mode"
+                    },
+                    "no_sandbox": {
+                        "default": True,
+                        "label": "No Sandbox"
+                    },
+                    "dev_shm_usage": {
+                        "default": True,
+                        "label": "Disable Dev SHM Usage"
+                    },
+                    "use_login": {
+                        "default": False,
+                        "label": "Use Login"
+                    }
+                }
+            }
+        }
+    },
+    "login": {
+        "label": "Login Settings",
+        "fields": {
+            "google_email": {
+                "type": "email",
+                "default": "",
+                "label": "Google Email"
+            },
+            "google_password": {
+                "type": "password",
+                "default": "",
+                "label": "Google Password"
+            }
+        }
+    }
 }
 
-####Training####
-#trainingdata
-TRAININGDATA_FILE = 'trainingdata.json'
-
-# Standardwerte für das Training
-DEFAULT_MODEL_NAME = "gpt2"
-DEFAULT_EPOCHS = 3
-DEFAULT_LEARNING_RATE = 5e-5
-DEFAULT_BATCH_SIZE = 4
-DEFAULT_MAX_LENGTH = 128
-DEFAULT_WARMUP_STEPS = 500
-DEFAULT_WEIGHT_DECAY = 0.01
-DEFAULT_GRADIENT_ACCUMULATION_STEPS = 4
-DEFAULT_LOGGING_STEPS = 100
-DEFAULT_SAVE_STEPS = 500
-DEFAULT_EVAL_STEPS = 500
-
-####Seiten###
-# Manuelle Liste der Seiten (Name, Icon)
+# Keep only these core variables
+root_folder = os.path.dirname(os.path.abspath(__file__))
+content_folder = 'templates/content'
 pages = [
     {"name": "home", "icon": "home"},
     {"name": "scrape", "icon": "download"},
@@ -58,6 +171,13 @@ pages = [
     {"name": "generate", "icon": "auto_awesome"},
     {"name": "settings", "icon": "settings"}
 ]
-
-
-
+EXPECTED_KEYS = {
+    "title": ["title", "songtitle", "name"],
+    "lyrics": ["lyrics", "text", "songtext"],
+    "styles": ["styles", "genre", "genres", "style"],
+    "metatags": ["metatags", "tags", "meta"],
+    "language": ["language", "lang", "sprache"]
+}
+#TODO:Alle dateien durchgehen und das laden der Settings durch den settingmanager anpassen
+#TODO:Settingsmanager anpassen
+#TODO:Layout dynamisch generieren
