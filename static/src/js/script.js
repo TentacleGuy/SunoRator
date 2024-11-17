@@ -334,6 +334,13 @@ function initGenerationControls() {
 
 // Settings Controls
 function initSettingsControls() {
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const displayElement = document.getElementById('display_' + this.id);
+            displayElement.value = this.files[0].name;
+        });
+    });
+
     // Load current settings when page loads
     fetch('/api/settings')
         .then(response => response.json())
@@ -820,3 +827,4 @@ function addListItemEventListeners(container) {
         });
     });
 }
+

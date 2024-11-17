@@ -2,12 +2,12 @@ import os
 
 SETTINGS = {
     "model": {
-        "label": "Model Settings",
+        "label": "Training Settings",
         "fields": {
             "name": {
                 "type": "text",
                 "default": "gpt2",
-                "label": "Model Name"
+                "label": "Model"
             },
             "epochs": {
                 "type": "number",
@@ -62,122 +62,117 @@ SETTINGS = {
         }
     },
     "paths": {
-        "label": "Path Settings",
-        "fields": {
-            "songs_dir": {
-                "type": "text",
+        "label": "File Settings",
+            "fields": {
+                "songs_dir": {
+                "type": "directory",
                 "default": "songs",
                 "label": "Songs Directory"
             },
             "meta_dir": {
-                "type": "text",
+                "type": "directory",
                 "default": "song_meta",
                 "label": "Meta Directory"
             },
-            "scraped_urls_file": {
-                "type": "text",
-                "default": "song_meta/urls.json",
-                "label": "Scraped URLs File"
+            "model_dir": {
+                "type": "directory",
+                "default": "models",
+                "label": "Model Directory"
             },
-            "styles_file": {
-                "type": "text",
-                "default": "song_meta/all_styles.json",
-                "label": "Styles File"
-            },
-            "song_styles_mapping_file": {
-                "type": "text",
-                "default": "song_meta/song_styles_mapping.json",
-                "label": "Song Styles Mapping File"
-            },
-            "meta_tags_file": {
-                "type": "text",
-                "default": "song_meta/all_meta_tags.json",
-                "label": "Meta Tags File"
-            },
-            "song_meta_mapping_file": {
-                "type": "text",
-                "default": "song_meta/song_meta_mapping.json",
-                "label": "Song Meta Mapping File"
-            },
-            "trainingdata_file": {
-                "type": "text",
-                "default": "trainingdata.json",
-                "label": "Training Data File"
+            "output_dir": {
+                "type": "directory",
+                "default": "output",
+                "label": "Output Directory"
             }
         }
     },
     "scraper": {
         "label": "Scraper Settings",
         "fields": {
-            "delay": {
-                "type": "number",
-                "default": 5,
-                "label": "Delay (seconds)"
-            },
-            "window_size": {
-                "type": "text",
-                "default": "1920,1080",
-                "label": "Window Size"
+            "general":{
+                "label": "General",
+                "fields": {
+                    "delay": {
+                        "type": "number",
+                        "default": 5,
+                        "label": "Page loading delay (seconds)"
+                    },
+                }
             },
             "browser_options": {
-                "type": "checkbox_group",
-                "label": "Browser Options",
-                "options": {
-                    "headless": {
-                        "default": True,
-                        "label": "Enable Headless Mode"
-                    },
-                    "no_sandbox": {
-                        "default": True,
-                        "label": "No Sandbox"
-                    },
-                    "dev_shm_usage": {
-                        "default": True,
-                        "label": "Disable Dev SHM Usage"
+                "label": "Browser",
+                "fields": {
+                    "arguments": {
+                        "type": "checkbox_group",
+                        "label": "Arguments",
+                        "options": {
+                            "headless": {
+                                "default": True,
+                                "label": "Enable Headless Mode"
+                            },
+                            "no_sandbox": {
+                                "default": True,
+                                "label": "No Sandbox"
+                            },
+                            "dev_shm_usage": {
+                                "default": True,
+                                "label": "Disable Dev SHM Usage"
+                            }
+                        }
                     },
                     "use_login": {
-                        "default": False,
-                        "label": "Use Login"
+                        "type": "checkbox_group",
+                        "label": "Options",
+                        "options": {
+                            "use_login": {
+                                "default": False,
+                                "label": "Use Login?"
+                            }
+                        }
                     }
                 }
-            }
-        }
-    },
-    "login": {
-        "label": "Login Settings",
-        "fields": {
-            "google_email": {
-                "type": "email",
-                "default": "",
-                "label": "Google Email"
-            },
-            "google_password": {
-                "type": "password",
-                "default": "",
-                "label": "Google Password"
             }
         }
     }
 }
 
-# Keep only these core variables
-root_folder = os.path.dirname(os.path.abspath(__file__))
-content_folder = 'templates/content'
-pages = [
-    {"name": "home", "icon": "home"},
-    {"name": "scrape", "icon": "download"},
-    {"name": "prepare", "icon": "settings_suggest"},
-    {"name": "train", "icon": "school"},
-    {"name": "generate", "icon": "auto_awesome"},
-    {"name": "settings", "icon": "settings"}
-]
-EXPECTED_KEYS = {
-    "title": ["title", "songtitle", "name"],
-    "lyrics": ["lyrics", "text", "songtext"],
-    "styles": ["styles", "genre", "genres", "style"],
-    "metatags": ["metatags", "tags", "meta"],
-    "language": ["language", "lang", "sprache"]
-}
+import os
+
+
+def get_constants():
+    # Filenames
+    URLS_FILE = "urls.json"
+    STYLES_FILE = "all_styles.json"
+    SONG_STYLES_MAPPING_FILE = "song_styles_mapping.json"
+    META_TAGS_FILE = "all_meta_tags.json"
+    SONG_META_MAPPING_FILE = "song_meta_mapping.json"
+    MODEL_FILE = "gpt2.pt"
+    OUTPUT_FILE_TEMPLATE = "{title}.txt"
+
+    # Core variables
+    root_folder = os.path.dirname(os.path.abspath(__file__))
+    content_folder = 'templates/content'
+    pages = [
+        {"name": "home", "icon": "home"},
+        {"name": "scrape", "icon": "download"},
+        {"name": "prepare", "icon": "settings_suggest"},
+        {"name": "train", "icon": "school"},
+        {"name": "generate", "icon": "auto_awesome"},
+        {"name": "settings", "icon": "settings"}
+    ]
+    EXPECTED_KEYS = {
+        "title": ["title", "songtitle", "name"],
+        "lyrics": ["lyrics", "text", "songtext"],
+        "styles": ["styles", "genre", "genres", "style"],
+        "metatags": ["metatags", "tags", "meta"],
+        "language": ["language", "lang", "sprache"]
+    }
+
+    return locals()
+
+# Make constants available at module level
+globals().update(get_constants())
+
 #TODO:Alle dateien durchgehen und das laden der Settings durch den settingmanager anpassen
 #TODO:Settingsmanager anpassen
 #TODO:Layout dynamisch generieren

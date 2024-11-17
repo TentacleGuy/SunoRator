@@ -1,10 +1,32 @@
-import os
-from config.vars import *
 import re
 import regex
 import os
 import json
 from threading import Lock
+from utils.settings_manager import settings_manager
+from config.vars import get_constants
+
+constants = get_constants()
+paths = settings_manager.get_settings('paths')
+
+SONGS_DIR = paths['songs_dir']
+SONG_META_DIR = paths['meta_dir']
+SCRAPED_URLS_FILE = f"{SONG_META_DIR}/{constants['URLS_FILE']}"
+STYLES_FILE = f"{SONG_META_DIR}/{constants['STYLES_FILE']}"
+SONG_STYLES_MAPPING_FILE = f"{SONG_META_DIR}/{constants['SONG_STYLES_MAPPING_FILE']}"
+META_TAGS_FILE = f"{SONG_META_DIR}/{constants['META_TAGS_FILE']}"
+SONG_META_MAPPING_FILE = f"{SONG_META_DIR}/{constants['SONG_META_MAPPING_FILE']}"
+
+
+# Erstelle die Ordner, falls sie nicht vorhanden sind
+if not os.path.exists(SONGS_DIR):
+    os.makedirs(SONGS_DIR)
+
+if not os.path.exists(SONG_META_DIR):  # Füge dies für den neuen song_meta-Ordner hinzu
+    os.makedirs(SONG_META_DIR)
+
+# Sperrmechanismus für Dateioperationen (Vermeidung von Konflikten bei parallelen Schreibvorgängen)
+file_lock = Lock()
 
 #app
 def get_file_path(folder_name):
@@ -27,16 +49,6 @@ def get_pages():
             pages.append((url, name))
     
     return pages
-
-# Erstelle die Ordner, falls sie nicht vorhanden sind
-if not os.path.exists(SONGS_DIR):
-    os.makedirs(SONGS_DIR)
-
-if not os.path.exists(SONG_META_DIR):  # Füge dies für den neuen song_meta-Ordner hinzu
-    os.makedirs(SONG_META_DIR)
-
-# Sperrmechanismus für Dateioperationen (Vermeidung von Konflikten bei parallelen Schreibvorgängen)
-file_lock = Lock()
 
 #textfilter
 def remove_non_text_characters(text):

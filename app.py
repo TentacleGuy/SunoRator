@@ -224,7 +224,8 @@ def api_generate():
 #########################SETTINGS##########################
 @app.route('/settings')
 def settings():
-    return render_template('content/5-settings.html')
+    settings_html = settings_manager.generate_settings_html()
+    return render_template('content/5-settings.html', settings_content=settings_html)
 
 @app.route('/api/settings', methods=['GET', 'POST'])
 def handle_settings():
@@ -239,6 +240,19 @@ def reset_settings():
     settings_manager.settings = settings_manager.get_default_settings()
     settings_manager.save_settings()
     return jsonify({"status": "success"})
+
+@app.route('/api/file-picker', methods=['POST'])
+def file_picker():
+    data = request.json
+    if data['type'] == 'directory':
+        # Handle directory selection
+        directory = request.files['directory']
+        # Process directory
+    else:
+        # Handle file selection
+        file = request.files['file']
+        # Process file
+    return jsonify({"path": selected_path})
 
 
 
