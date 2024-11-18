@@ -25,6 +25,47 @@ html {
         }
     }
 
+.accordion-header {
+    position: relative;
+    display: flex;
+    align-items: center; /* Vertikale Zentrierung */
+    height: auto; /* Passt sich an die Höhe der Inhalte an */
+
+    .toggle-container {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%); /* Exakte vertikale Zentrierung */
+        z-index: 2;
+        pointer-events: auto;
+        bottom:unset!important;
+
+        input {
+            width: 30px;
+            height: 16px;
+            display: inline-block; /* Sicherstellen, dass die Switch-Größe korrekt gerendert wird */
+            vertical-align: middle; /* Falls das Input-Feld Text-basierte Einflüsse hat */
+        }
+    }
+
+    .accordion-button {
+        flex-grow: 1; /* Button nimmt verbleibenden Platz ein */
+        z-index: 1;
+        text-align: left;
+        padding-left: 50px; /* Platz schaffen für den Toggle-Button */
+
+        > span {
+            margin-left: 0;
+            padding-left: 0;
+        }
+    }
+}
+
+
+
+
+
+
     #logDrawerSpacer{
         &.minimized{
             min-height:48px;
@@ -43,7 +84,7 @@ html {
         transition: ease-out .3s ;
 
         #terminal-output {
-            height: 205px;
+            height: 207px;
             overflow-y: auto;
             padding: 0 15px;
         }

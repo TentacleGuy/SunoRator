@@ -217,6 +217,18 @@ function initScraperControls() {
     const addUrlBtn = document.getElementById('add-url');
     const urlInput = document.getElementById('url-input');
 
+    // Load collection toggle states
+    fetch('/api/collections/status')
+    .then(response => response.json())
+    .then(data => {
+        Object.entries(data).forEach(([collection, enabled]) => {
+            const toggle = document.querySelector(`#${collection}-toggle`);
+            if (toggle) {
+                toggle.checked = enabled;
+            }
+        });
+    });
+
     if (addUrlBtn) {
         addUrlBtn.addEventListener('click', () => {
             const url = urlInput.value;
@@ -241,6 +253,13 @@ function initScraperControls() {
         'scrape-song-urls': '/api/scrape/song-urls',               // Fetch only song URLs from collections
         'scrape-songs': '/api/scrape/songs'                     // Scrape song details (title, lyrics, etc.)
     };
+
+    // Add collection toggle handlers
+    document.querySelectorAll('.collection-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            toggleCollection(this.dataset.collection, this.checked);
+        });
+    });
 
     // Add event listeners to buttons for each scraping action
     Object.entries(scrapingActions).forEach(([id, endpoint]) => {
@@ -340,6 +359,12 @@ function initSettingsControls() {
             displayElement.value = this.files[0].name;
         });
     });
+    document.querySelectorAll('.collection-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            toggleCollection(this.dataset.collection, this.checked);
+        });
+    });
+
 
     // Load current settings when page loads
     fetch('/api/settings')
@@ -839,4 +864,19 @@ function handleLoginClick() {
 }
 
 
+function toggleCollection(collection, enabled) {
+    fetch('/api/urls/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: collection,
+            enabled: enabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        socket.emit('log_update', { data: `Collection ${collection} ${enabled ? 'enabled' : 'disabled'}` });
+        updateUrlLists();
+    });
+}
 

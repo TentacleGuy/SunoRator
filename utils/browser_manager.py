@@ -52,11 +52,13 @@ class BrowserManager:
         return self.driver
 
     def get_driver(self):
-        print("BrowserManager: get_driver called")
-        if not self.driver:
-            print("BrowserManager: initializing new driver")
-            self.init_driver()
-        return self.driver
+        if self.driver:
+            try:
+                self.driver.quit()
+            except:
+                pass
+            self.driver = None
+        return self.init_driver()
 
     def close(self):
         if self.driver:

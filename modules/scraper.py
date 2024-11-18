@@ -387,25 +387,33 @@ class WebScraper:
             playlists = get_playlist_data()
 
             # Process individual songs
-            single_songs = [(song['url'], None) for song in playlists['songs'].values()]
+            single_songs = [(song, None) for song in playlists['songs'].values() if song.get('enabled', True)]
 
-            # Process songs from all other collections
+            # Process songs from collections
             collection_songs = []
             for collection_type in ['playlists', 'artists', 'genres']:
                 for collection_url, data in playlists[collection_type].items():
-                    if data.get('song_urls'):
-                        collection_songs.extend([(song['url'], collection_url) for song in data['song_urls']])
+                    if data.get('enabled', True) and isinstance(data, dict) and 'song_urls' in data:
+                        collection_songs.extend([
+                            (song, collection_url)
+                            for song in data['song_urls']
+                            if song.get('enabled', True)
+                        ])
 
             # Update overall progress
             total_songs = len(single_songs) + len(collection_songs)
-            self.emit_log(f"Found {len(single_songs)} single songs and {len(collection_songs)} collection songs")
+            total_collections = 1 + len(set(playlist_url for _, playlist_url in collection_songs))  # 1 for singles collection
+            self.emit_log(f"Found {total_songs} songs")
             self.emit_progress('overall', 0, total_songs)
             processed_count = 0
 
-            # Process manual songs first
+            # Process songs first
             if single_songs:
-                self.emit_log("Processing manual songs...")
-                for song_obj, _ in single_songs:
+                self.emit_log("Processing single songs...")
+                self.emit_progress('playlist', 1, total_collections)
+                self.emit_progress('song', 0, len(single_songs))
+
+                for index, (song_data, _) in enumerate(single_songs):
                     if stop_event.is_set():
                         self.emit_log("Stopping song scraping...")
                         break
@@ -415,17 +423,18 @@ class WebScraper:
                         if stop_event.is_set():
                             break
 
-                    song_url = song_obj['url']
+                    song_url = song_data['url']
                     song_id = extract_song_id_from_url(song_url)
 
                     if song_id in processed_song_ids:
                         self.emit_log(f"Song {song_id} already exists -> skipping")
                         processed_count += 1
                         self.emit_progress('overall', processed_count, total_songs)
+                        self.emit_progress('song', index + 1, len(single_songs))
                         continue
 
                     try:
-                        self.emit_log(f"Processing manual song {song_id}")
+                        self.emit_log(f"Processing song {song_id}")
                         self.driver.get(song_url)
                         time.sleep(2)
 
@@ -457,17 +466,17 @@ class WebScraper:
                             self.emit_song_info(song_data, None)
 
                             # Update status in playlists data
-                            playlists = get_playlist_data()  # Get fresh data
-                            playlists['single_songs'][song_url]['processed'] = True
+                            playlists = get_playlist_data()
+                            playlists['songs'][song_url]['processed'] = True
                             save_playlist_data(playlists)
 
                             processed_count += 1
-
                             self.emit_progress('overall', processed_count, total_songs)
+                            self.emit_progress('song', index + 1, len(single_songs))
                             self.emit_log(f"Successfully processed manual song {title}")
 
                     except Exception as e:
-                        self.emit_log(f"Error processing manual song: {str(e)}")
+                        self.emit_log(f"Error processing song: {str(e)}")
                         continue
 
             # Process playlist songs

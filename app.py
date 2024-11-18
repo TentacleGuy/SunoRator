@@ -152,22 +152,25 @@ def get_all_urls():
 
 @app.route('/api/urls/toggle', methods=['POST'])
 def toggle_url():
-    data = request.json
-    url = data.get('url')
+    data = request.get_json()
     playlists = get_playlist_data()
 
-    # Find the correct collection type for this URL
-    for collection_type in ['playlists', 'artists', 'genres', 'songs']:
-        if url in playlists[collection_type]:
-            playlists[collection_type][url]['enabled'] = not playlists[collection_type][url].get('enabled', True)
-            save_playlist_data(playlists)
-            return jsonify({
-                "success": True,
-                "enabled": playlists[collection_type][url]['enabled']
-            })
+    if 'type' in data:
+        # Handle collection toggle
+        collection_type = data['type']
+        enabled = data['enabled']
 
-    return jsonify({"success": False}), 404
+        if collection_type in playlists:
+            for url in playlists[collection_type]:
+                if isinstance(playlists[collection_type][url], dict):
+                    if 'enabled' not in playlists[collection_type][url]:
+                        playlists[collection_type][url]['enabled'] = True
+                    playlists[collection_type][url]['enabled'] = enabled
+                else:
+                    playlists[collection_type][url] = {'enabled': enabled}
 
+    save_playlist_data(playlists)
+    return jsonify({'success': True})
 @app.route('/api/urls/delete', methods=['POST'])
 def delete_url():
     data = request.json
@@ -186,6 +189,17 @@ def add_url():
     url_type = data.get('type')
     success = add_url_to_collection(url, url_type)
     return jsonify({'success': success})
+
+@app.route('/api/collections/status')
+def get_collection_status():
+    playlists = get_playlist_data()
+    status = {}
+    for collection_type in ['playlists', 'artists', 'genres', 'songs']:
+        if collection_type in playlists:
+            # Check first item in collection for enabled status
+            first_item = next(iter(playlists[collection_type].values()), {})
+            status[collection_type] = first_item.get('enabled', True)
+    return jsonify(status)
 
 ##########################PREPARE##########################
 @app.route('/prepare')
