@@ -1,8 +1,4 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import time
 from datetime import datetime
@@ -10,11 +6,13 @@ from utils.utils import *
 from config.vars import *
 from utils.socket_manager import socketio
 from utils.browser_manager import browser_manager
+from utils.settings_manager import settings_manager
 
 class WebScraper:
     def __init__(self, log_queue):
         self.log_queue = log_queue
         self.driver = None
+        #self.settings = settings_manager.get_settings('scraper')
 
     def emit_log(self, message):
         timestamp = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
@@ -42,10 +40,9 @@ class WebScraper:
         self.driver = browser_manager.get_driver()
         self.emit_log("WebDriver initialized.")
 
-    def fetch_song_data(self, driver, song_url):
-        """Fetches song data from the song page."""
-        self.driver = browser_manager.get_driver()
+    def fetch_song_data(self, song_url):
         try:
+            self.driver = browser_manager.get_driver()
             self.driver.get(song_url)
             time.sleep(5)
 
@@ -72,9 +69,8 @@ class WebScraper:
                 "lyrics": lyrics
             }
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
+            browser_manager.close()
+            self.driver = None
 
     def scrape_collections(self, stop_event, log_queue, pause_event):
         stats = {
@@ -129,14 +125,12 @@ class WebScraper:
             socketio.emit('thread_status_changed')
 
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
-            if stop_event:
-                stop_event.set()
+            browser_manager.close()
+            self.driver = None
 
     def scrape_song_urls(self, stop_event, log_queue, pause_event):
-        self.driver = browser_manager.get_driver()
+        # At the start of collection processing, get total count
+        current_collection_count = 0
         stats = {
             'homepage': {'songs_found': 0, 'new_songs': 0},
             'playlists': {'processed': 0, 'songs_found': 0, 'new_songs': 0},
@@ -145,24 +139,28 @@ class WebScraper:
         }
 
         try:
+            self.driver = browser_manager.get_driver()
             playlists = get_playlist_data()
             self.emit_log("Starting song URL scraping...")
-
-            # First scan homepage
             self.emit_log("\nScanning homepage for songs...")
             self.driver.get("https://suno.com")
             time.sleep(5)
 
             # Find all links containing '/song/'
+            current_songs = set(song.get('url', '') for song in playlists['songs'].values())
+            new_songs = []
             song_elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/song/')]")
 
             for elem in song_elements:
+                while pause_event.is_set():
+                    time.sleep(0.1)
+                    if stop_event.is_set():
+                        break
+
                 song_url = elem.get_attribute("href")
-                # Try to get title from different possible sources
                 title = elem.get_attribute("title")
                 if not title:
                     try:
-                        # Try to get text from inner span
                         title = elem.find_element(By.CSS_SELECTOR, "span").text
                     except:
                         try:
@@ -172,11 +170,21 @@ class WebScraper:
                             title = "Unknown"
 
                 stats['homepage']['songs_found'] += 1
-                if add_url_to_collection(song_url, "song", title):
+                if song_url not in current_songs:
+                    new_songs.append({
+                        "url": song_url,
+                        "title": title,
+                        "enabled": True,
+                        "processed": False
+                    })
                     stats['homepage']['new_songs'] += 1
-                    self.emit_log(f"Found new song on homepage: {title} - {song_url}")
+                    self.emit_log(f"Found new song: {title}")
 
-            save_playlist_data(playlists)
+            if new_songs:
+                playlists['songs'].update({song['url']: song for song in new_songs})
+                save_playlist_data(playlists)
+                self.emit_log(f"Saved {len(new_songs)} new songs from homepage")
+
             # Then process collection URLs
             for collection_type in ['playlists', 'artists', 'genres']:
                 if stop_event.is_set():
@@ -185,6 +193,9 @@ class WebScraper:
 
                 enabled_collections = {url: data for url, data in playlists[collection_type].items()
                                        if data.get('enabled', True)}
+
+                total_collections = len(enabled_collections)
+                self.emit_progress('playlist', 0, total_collections)
 
                 if enabled_collections:
                     self.emit_log(f"\nProcessing {collection_type}: {len(enabled_collections)} enabled items")
@@ -221,15 +232,27 @@ class WebScraper:
                         stats[collection_type]['songs_found'] += 1
 
                         if song_url not in current_songs:
-                            new_songs.append({"url": song_url, "title": title})
+                            new_songs.append({
+                                "url": song_url,
+                                "title": title,
+                                "enabled": True,
+                                "processed": False
+                            })
                             stats[collection_type]['new_songs'] += 1
                             self.emit_log(f"Found new song: {title}")
 
                     if new_songs:
                         data['song_urls'] = data.get('song_urls', []) + new_songs
+                        playlists[collection_type][url] = data  # Ensure the data is updated in the main playlists structure
+                        save_playlist_data(playlists)  # Save after each batch of new songs
+                        self.emit_log(f"Saved {len(new_songs)} new songs to {collection_type}")
+
 
                     data['processed'] = True
                     stats[collection_type]['processed'] += 1
+                    # Inside the collection loop, after processing each URL:
+                    current_collection_count += 1
+                    self.emit_progress('playlist', current_collection_count, total_collections)
                     self.emit_log(f"Found {len(new_songs)} new songs in this {collection_type}")
 
             save_playlist_data(playlists)
@@ -250,15 +273,12 @@ class WebScraper:
             socketio.emit('thread_status_changed')
 
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
-            if stop_event:
-                stop_event.set()
+            browser_manager.close()
+            self.driver = None
 
     def scrape_single_url(self, stop_event, log_queue, pause_event, url):
-        self.driver = browser_manager.get_driver()
         try:
+            self.driver = browser_manager.get_driver()
             self.emit_log(f"Starting to scrape URL: {url}")
             self.driver.get(url)
             time.sleep(5)
@@ -288,9 +308,8 @@ class WebScraper:
 
             socketio.emit('playlists_updated')
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
+            browser_manager.close()
+            self.driver = None
 
     def add_manual_song(self, song_url):
         return add_url_to_collection(song_url, "songs", {
@@ -301,11 +320,11 @@ class WebScraper:
         })
 
     def scrape_playlist_urls(self, urls, collection_type, stop_event, pause_event):
-        self.driver = browser_manager.get_driver()
         playlists = get_playlist_data()
         total_urls = len(urls)
 
         try:
+            self.driver = browser_manager.get_driver()
             for i, url in enumerate(urls):
                 if stop_event.is_set():
                     self.emit_log("Stopping URL scraping...")
@@ -358,13 +377,12 @@ class WebScraper:
             socketio.emit('playlists_updated')
 
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
+            browser_manager.close()
+            self.driver = None
 
     def scrape_songs(self, stop_event, log_queue, pause_event):
-        self.driver = browser_manager.get_driver()
         try:
+            self.driver = browser_manager.get_driver()
             processed_song_ids = get_processed_song_ids()
             playlists = get_playlist_data()
 
@@ -537,9 +555,8 @@ class WebScraper:
                 socketio.emit('playlists_updated')
 
         finally:
-            if self.driver:
-                browser_manager.close()
-                self.driver = None
+            browser_manager.close()
+            self.driver = None
 
     def save_song_data(self, song_data):
         updated_files = []
@@ -606,13 +623,17 @@ class WebScraper:
         save_json(song_data, song_file_path)
 
     def scrape_url_metadata(self, url, url_type):
-        self.driver.get(url)
-        time.sleep(2)
-        title = self.driver.find_element(By.TAG_NAME, 'h1').text
-        return {
-            'title': title,
-            'type': url_type,
-            'url': url,
-            'enabled': True,
-            'songs': []
-        }
+        try:
+            self.driver = browser_manager.get_driver()
+            time.sleep(2)
+            title = self.driver.find_element(By.TAG_NAME, 'h1').text
+            return {
+                'title': title,
+                'type': url_type,
+                'url': url,
+                'enabled': True,
+                'songs': []
+            }
+        finally:
+            browser_manager.close()
+            self.driver = None

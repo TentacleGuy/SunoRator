@@ -2,10 +2,11 @@ import logging
 from flask import Flask, render_template, jsonify, request
 from utils.thread_manager import thread_manager
 from modules import scraper, prepare, trainer, generator
-from utils.settings_manager import settings_manager  # Direct import of settings_manager
+from utils.browser_manager import browser_manager
 from utils.socket_manager import socketio
 from utils.utils import *
 from config.vars import *
+
 
 app = Flask(__name__)
 socketio.init_app(app)
@@ -110,14 +111,12 @@ def api_scrape_songs():
 def add_manual_playlist():
     data = request.json
     playlist_url = data['url']
-    # Create scraper instance with log queue
     scraper_instance = scraper.WebScraper(thread_manager.log_queue)
     success = scraper_instance.add_manual_playlist(playlist_url)
     return jsonify({"success": success})
 
 @app.route('/api/playlists/all')
 def get_all_playlists():
-    """Return all playlist data including auto, manual playlists and manual songs"""
     playlists = get_playlist_data()
     return jsonify(playlists)
 
@@ -125,7 +124,6 @@ def get_all_playlists():
 def add_manual_song():
     data = request.json
     song_url = data['url']
-    # Create scraper instance with log queue
     scraper_instance = scraper.WebScraper(thread_manager.log_queue)
     success = scraper_instance.add_manual_song(song_url)
     return jsonify({"success": success})
@@ -139,6 +137,7 @@ def scrape_single_url():
             scraper.WebScraper(thread_manager.log_queue).scrape_single_url(stop_event, log_queue, pause_event, url)
     )
     return jsonify({"status": "started" if success else "already running"})
+
 @app.route('/api/urls/all', methods=['GET'])
 def get_all_urls():
     data = load_json(SCRAPED_URLS_FILE)
@@ -179,7 +178,6 @@ def delete_url():
             del collection[url]
     save_playlist_data(playlists)
     return jsonify({"success": True})
-
 
 @app.route('/api/urls/add', methods=['POST'])
 def add_url():
@@ -241,20 +239,11 @@ def reset_settings():
     settings_manager.save_settings()
     return jsonify({"status": "success"})
 
-@app.route('/api/file-picker', methods=['POST'])
-def file_picker():
-    data = request.json
-    if data['type'] == 'directory':
-        # Handle directory selection
-        directory = request.files['directory']
-        # Process directory
-    else:
-        # Handle file selection
-        file = request.files['file']
-        # Process file
-    return jsonify({"path": selected_path})
-
-
+@app.route('/api/browser/open-login', methods=['POST'])
+def open_login_browser():
+    driver = browser_manager.get_driver()
+    driver.get('https://suno.com')
+    return jsonify({'status': 'success'})
 
 # Run the app
 if __name__ == '__main__':

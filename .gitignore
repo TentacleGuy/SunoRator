@@ -14,3 +14,4 @@ venv/
 .idea/
 
 config/settings.json
+/config/_settings.json

@@ -828,3 +828,15 @@ function addListItemEventListeners(container) {
     });
 }
 
+function handleLoginClick() {
+    fetch('/api/browser/open-login', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        socket.emit('log_update', { data: 'Opening login browser...' });
+    });
+}
+
+
+

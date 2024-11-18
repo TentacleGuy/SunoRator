@@ -3,79 +3,105 @@ from queue import Queue
 import logging
 from utils.socket_manager import socketio
 import time
+import ctypes
+
+
+class StoppableThread(Thread):
+    def __init__(self, target, args, **kwargs):
+        # Extract or create control events
+        self._stop_flag = args[-3]  # stop_event
+        self._pause_flag = args[-1]  # pause_event
+        self._state = "running"
+
+        # Call parent constructor with modified target
+        super().__init__(target=self._wrapped_target, args=(target, args), **kwargs)
+
+    def _wrapped_target(self, original_target, args):
+        try:
+            while not self._stop_flag.is_set():
+                if self._pause_flag.is_set():
+                    time.sleep(0.1)
+                    continue
+                original_target(*args)
+                break
+        except Exception as e:
+            logging.error(f"Thread error: {e}")
+        finally:
+            self._state = "stopped"
+
+    def stop(self):
+        self._stop_flag.set()
+        self._state = "stopped"
+
+    def pause(self):
+        self._pause_flag.set()
+        self._state = "paused"
+
+    def resume(self):
+        self._pause_flag.clear()
+        self._state = "running"
+
+    def get_state(self):
+        return self._state
+
 
 class ThreadManager:
     def __init__(self):
         self.threads = {}
-        self.stop_events = {}
-        self.pause_events = {}
         self.log_queue = Queue()
 
     def start_thread(self, name, target, args=()):
         if name in self.threads and self.threads[name].is_alive():
             return False
-            
+
+        # Create default events for thread control
         stop_event = Event()
         pause_event = Event()
-        self.stop_events[name] = stop_event
-        self.pause_events[name] = pause_event
-        
-        thread = Thread(
+
+        # Combine the provided args with our control events and log queue
+        thread_args = (*args, stop_event, self.log_queue, pause_event)
+
+        thread = StoppableThread(
             target=target,
-            args=(*args, stop_event, self.log_queue, pause_event),  # Add pause_event here
+            args=thread_args,
             name=name,
             daemon=True
-    )
-        
+        )
+
         self.threads[name] = thread
         thread.start()
         socketio.emit('thread_started')
         return True
 
-    def _wrapped_target(self, name, target, args, stop_event, pause_event):
-        try:
-            while not stop_event.is_set():
-                if pause_event.is_set():
-                    time.sleep(0.1)  # Add small delay while paused
-                    continue
-                target(*args, stop_event, self.log_queue)
-                break
-        finally:
-            if name in self.threads:
-                del self.threads[name]
-                del self.stop_events[name]
-                del self.pause_events[name]
-
     def stop_thread(self, name):
-        if name in self.stop_events:
-            self.stop_events[name].set()
-            # Immediate cleanup
+        if name in self.threads:
+            thread = self.threads[name]
+            thread.stop()
             if name in self.threads:
                 del self.threads[name]
-            if name in self.stop_events:
-                del self.stop_events[name]
-            if name in self.pause_events:
-                del self.pause_events[name]
             socketio.emit('thread_stopped', {'name': name})
 
     def pause_thread(self, name):
-        if name in self.pause_events:
-            self.pause_events[name].set()
+        if name in self.threads:
+            thread = self.threads[name]
+            thread.pause()
             socketio.emit('thread_status_changed')
 
     def resume_thread(self, name):
-        if name in self.pause_events:
-            self.pause_events[name].clear()
+        if name in self.threads:
+            thread = self.threads[name]
+            thread.resume()
             socketio.emit('thread_status_changed')
 
     def get_active_threads(self):
         return {
             name: {
                 'is_alive': thread.is_alive(),
-                'status': 'paused' if self.pause_events.get(name, Event()).is_set() else 'running'
+                'status': thread.get_state()
             }
             for name, thread in self.threads.items()
             if thread.is_alive()
-        } 
+        }
+
 
 thread_manager = ThreadManager()

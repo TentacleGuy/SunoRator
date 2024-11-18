@@ -3,38 +3,58 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from utils.settings_manager import settings_manager
-
+from config.vars import USERDATA_DIR
+import os
 
 class BrowserManager:
     def __init__(self):
         self.driver = None
-        self.init_driver()
 
     def init_driver(self):
+        # Clean up any existing Chrome processes
+        os.system("pkill -f 'Google Chrome'")
+
         print("Starting browser initialization...")
         chrome_options = Options()
-        settings = settings_manager.get_settings()
-        print(f"Got settings: {settings}")
-        scraper_settings = settings.get('scraper', {})
-        print(f"Scraper settings: {scraper_settings}")
+        # User data directory with absolute path
+        os.makedirs(USERDATA_DIR, exist_ok=True)
+        chrome_options.add_argument(f"user-data-dir={USERDATA_DIR}")
 
-        if scraper_settings.get('headless', True):
-            chrome_options.add_argument("--headless")
-        if scraper_settings.get('no_sandbox', True):
-            chrome_options.add_argument("--no-sandbox")
-        if scraper_settings.get('dev_shm_usage', True):
-            chrome_options.add_argument("--disable-dev-shm-usage")
+        browser_settings = settings_manager.get_settings('browser')
 
-        window_size = scraper_settings.get('window_size', '1920,1080')
-        chrome_options.add_argument(f"--window-size={window_size}")
+        # Get nested settings
+        arguments = browser_settings.get('arguments', {})
+        options = browser_settings.get('options', {})
+
+        # Apply arguments
+        if arguments.get('no_sandbox'):
+            chrome_options.add_argument('--no-sandbox')
+        if arguments.get('dev_shm_usage'):
+            chrome_options.add_argument('--disable-dev-shm-usage')
+        if arguments.get('disable_gpu'):
+            chrome_options.add_argument('--disable-gpu')
+        if arguments.get('disable_automation'):
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+
+        # Apply options
+        chrome_options.add_argument(f'--remote-debugging-port={options.get("debugging_port", "0")}')
+        chrome_options.add_argument(f'--window-size={options.get("window_size", "1920,1080")}')
+        chrome_options.add_argument(f'--user-agent={options.get("user_agent", "Mozilla/5.0")}')
+
+        service = Service(ChromeDriverManager().install())
 
         print("Creating Chrome driver...")
-        service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         print("Chrome driver created successfully")
 
+        return self.driver
+
     def get_driver(self):
+        print("BrowserManager: get_driver called")
         if not self.driver:
+            print("BrowserManager: initializing new driver")
             self.init_driver()
         return self.driver
 
@@ -42,6 +62,5 @@ class BrowserManager:
         if self.driver:
             self.driver.quit()
             self.driver = None
-
 
 browser_manager = BrowserManager()

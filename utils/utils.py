@@ -4,22 +4,11 @@ import os
 import json
 from threading import Lock
 from utils.settings_manager import settings_manager
-from config.vars import get_constants
-
-constants = get_constants()
-paths = settings_manager.get_settings('paths')
-
-SONGS_DIR = paths['songs_dir']
-SONG_META_DIR = paths['meta_dir']
-SCRAPED_URLS_FILE = f"{SONG_META_DIR}/{constants['URLS_FILE']}"
-STYLES_FILE = f"{SONG_META_DIR}/{constants['STYLES_FILE']}"
-SONG_STYLES_MAPPING_FILE = f"{SONG_META_DIR}/{constants['SONG_STYLES_MAPPING_FILE']}"
-META_TAGS_FILE = f"{SONG_META_DIR}/{constants['META_TAGS_FILE']}"
-SONG_META_MAPPING_FILE = f"{SONG_META_DIR}/{constants['SONG_META_MAPPING_FILE']}"
-
+from config.vars import *
 
 # Erstelle die Ordner, falls sie nicht vorhanden sind
 if not os.path.exists(SONGS_DIR):
+    print(f"Creating folder: {SONGS_DIR}")
     os.makedirs(SONGS_DIR)
 
 if not os.path.exists(SONG_META_DIR):  # Füge dies für den neuen song_meta-Ordner hinzu
@@ -115,7 +104,6 @@ def get_playlist_data():
     return data
 
 def save_playlist_data(data):
-    """Centralized function to save playlist data"""
     save_json(data, SCRAPED_URLS_FILE)
 
 def add_url_to_collection(url, url_type, title=None):
