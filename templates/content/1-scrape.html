@@ -90,7 +90,61 @@
             </div>
         </div>
     </div>
-
+    <div class="url-manager">
+        <!-- URL Input Section -->
+        <div class="url-input-section">
+            <div class="input-group mb-3">
+                <input type="text" id="url-input" class="form-control" placeholder="Enter URL">
+                <select id="url-type" class="form-select">
+                    <option value="playlist">Playlist</option>
+                    <option value="song">Song</option>
+                </select>
+                <button class="btn btn-primary" id="add-url">Add URL</button>
+            </div>
+        </div>
+    
+        <!-- URL Display Section -->
+        <div class="url-display-section">
+            <div class="accordion" id="urlAccordion">
+                <!-- Auto Playlists -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#autoPlaylists">
+                            Auto-scraped Playlists
+                        </button>
+                    </h2>
+                    <div id="autoPlaylists" class="accordion-collapse collapse show">
+                        <div class="accordion-body" id="auto-playlists-content"></div>
+                    </div>
+                </div>
+                
+                <!-- Manual Playlists -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#manualPlaylists">
+                            Manual Playlists
+                        </button>
+                    </h2>
+                    <div id="manualPlaylists" class="accordion-collapse collapse show">
+                        <div class="accordion-body" id="manual-playlists-content"></div>
+                    </div>
+                </div>
+                
+                <!-- Manual Songs -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#manualSongs">
+                            Manual Songs
+                        </button>
+                    </h2>
+                    <div id="manualSongs" class="accordion-collapse collapse show">
+                        <div class="accordion-body" id="manual-songs-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Control Buttons -->
     <div class="row mt-4">
         <div class="col-12">

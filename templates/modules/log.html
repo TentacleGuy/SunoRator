@@ -3,8 +3,16 @@
 <div class="log-drawer" id="logDrawer">
     <div class="drawer-content bg-light">
         <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-            <div class="drawer-handle btn btn-sm btn-secondary" id="logDrawerHandle">
-                <i class="bi bi-chevron-up fs-4"></i>
+            <div class="drawerButtons">
+                <div class="drawer-handle btn btn-sm btn-secondary" id="logDrawerMinHandle">
+                    <i class="bi bi-chevron-down fs-4"></i>
+                </div>
+                <div class="drawer-handle btn btn-sm btn-secondary" id="logDrawerNormalHandle">
+                    <i class="bi bi-dash fs-4"></i>
+                </div>
+                <div class="drawer-handle btn btn-sm btn-secondary" id="logDrawerExpandHandle">
+                    <i class="bi bi-chevron-double-up fs-4"></i>
+                </div>
             </div>
             <h6 class="mb-0">System Log</h6>
             <button class="btn btn-sm btn-secondary" onclick="copyLogToClipboard()">

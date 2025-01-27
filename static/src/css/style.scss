@@ -1,17 +1,69 @@
+@font-face {
+    font-family: 'Material Icons Outlined';
+    src: url("../assets/fonts/material-icons.ttf") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'Bank Gothic';
+    src: url("../assets/fonts/Bank-Gothic.otf");
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'bootstrap-icons';
+    src: url("../assets/fonts/bootstrap-icons.woff2");
+    font-style: normal;
+}
+
+.material-icons-outlined{
+    font-family: 'Material Icons Outlined';
+    font-weight: normal;
+    font-style: normal !important; /* Forces normal style */
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    vertical-align: middle; /* Helps with alignment */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'liga';
+    transform: none !important;
+}
+
 html {
     body {
         background-color: #efefef;
-
+        font-family: 'Bank Gothic';
     }
 }
+
+body.toggled:not(body.toggled.sidebar-hovered){
+    .log-drawer{
+        left:70px;
+    }
+}
+
+.drawer-spacer{
+    min-height:240px;
+    height:240px;
+}
+
 .log-drawer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
-    left:0;
+    left: 260px;
     right:0;
     z-index: 5;
     height: 240px; 
-    transition: height 0.3s ease;
+    transition: 0.3s ease;
     
     #terminal-output {
         height: 200px;
@@ -29,9 +81,31 @@ html {
             overflow-y: auto;
         }
     }
+    &.minimized{
+        height:63px;
+        .drawer-content{
+            height:63px;
+        }
+        #terminal-output {
+            height:0;
+        }
+
+    }
 
 }
 
 body.toggled:not(body.toggled.sidebar-hovered) .logo-img {
     width: 40px;
+}
+
+#thread-count {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	line-height: 0;
+	width: 20px;
+	height: 20px;
 }

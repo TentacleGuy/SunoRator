@@ -1,8 +1,18 @@
 import os
 
 root_folder = os.path.dirname(os.path.abspath(__file__))
-# Pfad zu den PHP-Dateien im content-Ordner
+# Pfad zu content-Seiten
 content_folder = 'templates/content'
+
+#Menü und Seiten
+pages = [
+    {"url": "home", "name": "Home", "icon": "home"},
+    {"url": "scrape", "name": "Scrape", "icon": "download"},
+    {"url": "prepare", "name": "Prepare", "icon": "settings"},
+    {"url": "train", "name": "Train", "icon": "school"},
+    {"url": "generate", "name": "Generate", "icon": "create"},
+    {"url": "settings", "name": "Settings", "icon": "tune"}
+]
 
 # Ordner für die Song-JSON-Dateien
 SONGS_DIR = "songs"
@@ -11,6 +21,8 @@ SONG_META_DIR = "song_meta"  # Neuer Ordner für die JSON-Dateien
 # JSON Datei Pfade im Ordner 'song_meta'
 SCRAPED_PLAYLISTS_FILE = f"{SONG_META_DIR}/auto_playlists_and_songs.json"
 MANUAL_PLAYLISTS_FILE = f"{SONG_META_DIR}/manual_playlists_and_songs.json"
+MANUAL_PLAYLISTS_FILE = f"{SONG_META_DIR}/manual_playlists.json"
+MANUAL_SONGS_FILE = f"{SONG_META_DIR}/manual_songs.json"
 STYLES_FILE = f"{SONG_META_DIR}/all_styles.json"
 SONG_STYLES_MAPPING_FILE = f"{SONG_META_DIR}/song_styles_mapping.json"
 META_TAGS_FILE = f"{SONG_META_DIR}/all_meta_tags.json"

@@ -5,44 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeNavigation();
     loadPageSpecificFunctions();
     initializeLoggingDrawer()
-
-    
-Pace.options = {
-    startOnPageLoad: true,
-    restartOnRequestAfter: false,
-    ajax: false
-};
-
-Pace.on('start', () => {
-    console.log('Pace: Starting...');
-});
-
-Pace.on('progress', (progress) => {
-    console.log('Pace: Progress:', progress);
-});
-
-Pace.on('hide', () => {
-    console.log('Pace: Hide event triggered');
-});
-
-Pace.on('done', () => {
-    console.log('Pace: Done event triggered');
-});
-
-Pace.on('stop', () => {
-    console.log('Pace: Stop event triggered');
-});
-
-// Track AJAX requests
-Pace.track(function() {
-    console.log('Pace: Tracking new request');
-});
-
-
-Pace.on('done', function() {
-    document.body.classList.remove('pace-running');
-    document.body.classList.add('pace-done');
-});
 });
 
 // Socket.IO initialization
@@ -68,20 +30,6 @@ function initializeSocketIO() {
             label.textContent = data.label;
         }
     });
-      
-
-    /*socket.on('progress_update', function(data) {
-        //console.log('Progress update received:', data); // Debug log
-        const progressBar = document.getElementById(data.type + '-progress');
-        const label = document.querySelector(`label[for="${data.type}-progress"]`);
-        if (progressBar) {
-            progressBar.value = data.value;
-            progressBar.max = data.max;
-        }
-        if (label) {
-            label.textContent = data.label;
-        }
-    });*/
 
     socket.on('song_info_update', function(data) {
         document.getElementById('song-url').textContent = data.song_url;
@@ -282,6 +230,88 @@ function initScraperControls() {
                 .then(data => console.log('Started song scraping:', data));
         });
     }
+
+    function initScraperControls() {
+        // Existing scraper controls...
+        
+        // Add URL management
+        const urlInput = document.getElementById('url-input');
+        const urlType = document.getElementById('url-type');
+        const addUrlBtn = document.getElementById('add-url');
+        
+        function loadUrls() {
+            fetch('/api/urls/playlists')
+                .then(response => response.json())
+                .then(data => {
+                    updateUrlDisplay('auto-playlists-content', data.auto);
+                    updateUrlDisplay('manual-playlists-content', data.manual);
+                });
+                
+            fetch('/api/urls/songs')
+                .then(response => response.json())
+                .then(songs => {
+                    updateSongDisplay('manual-songs-content', songs);
+                });
+        }
+        
+        function updateUrlDisplay(containerId, playlists) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            Object.entries(playlists).forEach(([playlistUrl, data]) => {
+                const playlistDiv = document.createElement('div');
+                playlistDiv.className = 'playlist-item';
+                playlistDiv.innerHTML = `
+                    <div class="playlist-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                        <i class="material-icons">playlist_play</i>
+                        <span>${playlistUrl}</span>
+                    </div>
+                    <div class="song-list hidden">
+                        ${data.song_urls.map(url => `
+                            <div class="song-item">
+                                <i class="material-icons">music_note</i>
+                                <span>${url}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(playlistDiv);
+            });
+        }
+        
+        function updateSongDisplay(containerId, songs) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = songs.map(url => `
+                <div class="song-item">
+                    <i class="material-icons">music_note</i>
+                    <span>${url}</span>
+                </div>
+            `).join('');
+        }
+        
+        if (addUrlBtn) {
+            addUrlBtn.addEventListener('click', () => {
+                const url = urlInput.value.trim();
+                const type = urlType.value;
+                
+                if (url) {
+                    fetch('/api/urls/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url, type })
+                    })
+                    .then(() => {
+                        urlInput.value = '';
+                        loadUrls();
+                    });
+                }
+            });
+            
+            // Initial load
+            loadUrls();
+        }
+    }
+    
 }
 
 // Preparation Controls
@@ -522,11 +552,23 @@ function initializeThemeSwitcher() {
 }
 
 function initializeLoggingDrawer(){
-    const handle = document.getElementById('logDrawerHandle');
+    const expandHandle = document.getElementById('logDrawerExpandHandle');
+    const normalHandle = document.getElementById('logDrawerNormalHandle');
+    const minHandle = document.getElementById('logDrawerMinHandle');
     const drawer = document.getElementById('logDrawer');
     
-    handle.addEventListener('click', () => {
-        drawer.classList.toggle('expanded');
+    normalHandle.addEventListener('click', () => {
+        drawer.classList.remove('expanded')
+        drawer.classList.remove('minimized');
+    });
+    expandHandle.addEventListener('click', () => {
+        drawer.classList.remove('minimized')
+        drawer.classList.add('expanded');
+
+    });
+    minHandle.addEventListener('click', () => {
+        drawer.classList.remove('expanded')
+        drawer.classList.add('minimized');
     });
 }
 

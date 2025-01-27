@@ -19,16 +19,6 @@ def handle_connect():
     
     thread_manager.start_thread('log_emitter', emit_logs)
 
-# Manuelle Liste der Seiten (URL, Name)
-pages = [
-    {"url": "home", "name": "Home"},
-    {"url": "scrape", "name": "Scrape"},
-    {"url": "prepare", "name": "Prepare"},
-    {"url": "train", "name": "Train"},
-    {"url": "generate", "name": "Generate"},
-    {"url": "settings", "name": "Settings"}
-]
-
 ##########################THREADS##########################
 @app.route('/api/threads')
 def get_active_threads():
@@ -71,6 +61,33 @@ def home():
 def scrape():
     return render_template('content/1-scrape.html')  # Return only content
 
+@app.route('/api/urls/playlists', methods=['GET'])
+def get_playlists():
+    auto_playlists = load_json(SCRAPED_PLAYLISTS_FILE)
+    manual_playlists = load_json(MANUAL_PLAYLISTS_FILE)
+    return jsonify({
+        "auto": auto_playlists,
+        "manual": manual_playlists
+    })
+
+@app.route('/api/urls/add', methods=['POST'])
+def add_url():
+    data = request.json
+    url = data['url']
+    url_type = data['type']  # 'playlist' or 'song'
+    
+    if url_type == 'playlist':
+        playlists = load_json(MANUAL_PLAYLISTS_FILE)
+        if url not in playlists:
+            playlists[url] = {"song_urls": []}
+            save_json(playlists, MANUAL_PLAYLISTS_FILE)
+    else:
+        songs = load_json(MANUAL_SONGS_FILE)
+        if url not in songs:
+            songs.append(url)
+            save_json(songs, MANUAL_SONGS_FILE)
+    
+    return jsonify({"status": "success"})
 
 @app.route('/api/scrape/playlists', methods=['GET', 'POST'])
 def api_scrape_playlists():

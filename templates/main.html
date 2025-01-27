@@ -4,10 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Suno Kit</title>
-
-        <!-- Pace Loading -->
-        <link href="{{ url_for('static', filename='dist/css/pace.min.css') }}" rel="stylesheet">
-        <script src="{{ url_for('static', filename='dist/js/pace.min.js') }}"></script>
+        
         <script src="{{ url_for('static', filename='dist/js/socket.io.min.js') }}" defer></script>
         <script src="{{ url_for('static', filename='src/js/script.js') }}" defer></script>
 
@@ -19,13 +16,11 @@
 
         <!-- Bootstrap CSS -->
         <link href="{{ url_for('static', filename='dist/css/bootstrap.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='dist/css/bootstrap-icons.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='dist/css/bootstrap-extended.min.css') }}" rel="stylesheet">
 
-        <!-- Fonts -->
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css?family=Material+Icons+Outlined" rel="stylesheet">
 
         <!-- Theme CSS -->
-        <link href="{{ url_for('static', filename='dist/css/bootstrap-extended.min.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='dist/css/main.min.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='dist/css/dark-theme.min.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='dist/css/blue-theme.min.css') }}" rel="stylesheet">
@@ -44,7 +39,9 @@
                 {% block content %}
                     {{ content | safe }}
                 {% endblock %}
+
             </div>
+            <div class="drawer-spacer">&nbsp;</div>
             <div class="log-drawer">
                 {% include 'modules/log.html' %}
             </div>
